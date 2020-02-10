@@ -1,6 +1,6 @@
 # okko
 
-Проект по эмуляции событий интернет-магазина на базе даных Oracle, пересылка сгенерированных событий в kafka producer, с последующем чтением событий kafka consumer и отправка их в другую базу Oracle, а также в Hdfs.
+Проект по эмуляции событий интернет-магазина на базе данных Oracle, пересылка сгенерированных событий в kafka producer, с последующим чтением событий kafka consumer и отправка их в другую базу Oracle, а также в Hdfs.
 
 ЦЕЛИ
 ----------------------------------------------------------------------------------------------------------------------------
@@ -38,7 +38,7 @@ address VARCHAR2(50)
 ---Справочник Товары---
 CREATE TABLE DIM_PRODUCTS (
 product_id NUMBER,
-category id NUMBER,
+category_id NUMBER,
 category_code VARCHAR2(25),
 brand VARCHAR2(25),
 description VARCHAR2(250),
