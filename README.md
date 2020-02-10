@@ -44,7 +44,7 @@ category_code VARCHAR2(25),
 brand VARCHAR2(25),
 description VARCHAR2(250),
 name VARCHAR2(100),
-price NUMBER,
+price NUMBER
 );
 
 ---Справочник поставщики---
@@ -60,7 +60,7 @@ address VARCHAR2(50)
 ---Справочник событий---
 CREATE TABLE EVENTS (
 event_id NUMBER,
-event_type VARCHAR2(15),
+event_type VARCHAR2(15)
 );
 
 3. Наполнение исходных таблиц посредством PL/SQL пакета
