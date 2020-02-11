@@ -49,7 +49,7 @@ name VARCHAR2(100),
 price NUMBER
 );
 
----Справочник поставщики---
+---Справочник Поставщики---
 CREATE TABLE DIM_SUPPLIERS (
 suppliers_id NUMBER,
 product_id NUMBER,
