@@ -12,16 +12,18 @@ task_1: Реализация данных исходной (source) базы Ora
 Структура таблиц исходной БД:
 
 ---Таблица событий (таблица фактов)---
-CREATE TABLE FCT_EVENTS (
+CREATE TABLE FCT_EVENTS ( 
 event_time DATE,
-event_id NUMBER,
-product_id NUMBER,
-category_id NUMBER,
-category_code VARCHAR2(25),
-brand VARCHAR2(25),
-price NUMBER,
-customer_id NUMBER,
-customer_session VARCHAR2(45)
+event_type VARCHAR2(15)
+event_id NUMBER, 
+product_id NUMBER, 
+category_id NUMBER, 
+category_code VARCHAR2(25), 
+brand VARCHAR2(25), 
+price NUMBER, 
+customer_id NUMBER, 
+customer_session VARCHAR2(45),
+CONSTRAINT event_pk PRIMARY KEY (event_id)
 );
 
 ---Справочник Покупатели---
@@ -57,11 +59,6 @@ city VARCHAR2(20),
 address VARCHAR2(50)
 );
 
----Справочник событий---
-CREATE TABLE EVENTS (
-event_id NUMBER,
-event_type VARCHAR2(15)
-);
 
 3. Наполнение исходных таблиц посредством PL/SQL пакета
 4. Добавить job, для запуска пакета по расписанию, через dbms_job (генерация раз в 5-10 минут)
