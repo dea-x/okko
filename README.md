@@ -27,36 +27,39 @@ CONSTRAINT event_pk PRIMARY KEY (event_id)
 );
 
 ---Справочник Покупатели---
-CREATE TABLE DIM_CUSTOMERS (
-customer_id NUMBER,
-country VARCHAR2(20),
-city VARCHAR2(20),
-mail VARCHAR2(50),
-phone VARCHAR2(25),
-first_name VARCHAR2(20),
-last_name VARCHAR2(20),
-address VARCHAR2(50)
+CREATE TABLE DIM_CUSTOMERS ( 
+customer_id NUMBER, 
+country VARCHAR2(20), 
+city VARCHAR2(20), 
+mail VARCHAR2(50), 
+phone VARCHAR2(25), 
+first_name VARCHAR2(20), 
+last_name VARCHAR2(20), 
+address VARCHAR2(50),
+last_update_date TIMESTAMP
 );
 
 ---Справочник Товары---
-CREATE TABLE DIM_PRODUCTS (
-product_id NUMBER,
-category_id NUMBER,
-category_code VARCHAR2(25),
-brand VARCHAR2(25),
-description VARCHAR2(250),
-name VARCHAR2(100),
-price NUMBER
+CREATE TABLE DIM_PRODUCTS ( 
+product_id NUMBER, 
+category_id NUMBER, 
+category_code VARCHAR2(25), 
+brand VARCHAR2(25), 
+description VARCHAR2(250), 
+name VARCHAR2(100), 
+price NUMBER,
+last_update_date TIMESTAMP
 );
 
 ---Справочник Поставщики---
-CREATE TABLE DIM_SUPPLIERS (
-suppliers_id NUMBER,
-product_id NUMBER,
-name VARCHAR2(100),
-country VARCHAR2(20),
-city VARCHAR2(20),
-address VARCHAR2(50)
+CREATE TABLE DIM_SUPPLIERS ( 
+suppliers_id NUMBER, 
+product_id NUMBER, 
+name VARCHAR2(100), 
+country VARCHAR2(20), 
+city VARCHAR2(20), 
+address VARCHAR2(50),
+last_update_date TIMESTAMP
 );
 
 
