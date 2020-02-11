@@ -19,7 +19,6 @@ TARGET_DB_USER_PASSWORD = "test_user"
 def parse(line):
     data = json.loads(line)
     return data['event_time'], data['event_id'], data['product_id'], data['category_id'], data['category_code'], data['brand'], data['price'], data['customer_id'], data['customer_session']
-    #return data['sale_id'], data['customer_id'], data['store_id'], data['product_id'], data['total_price']
 
 def deserializer():
     return bytes.decode
