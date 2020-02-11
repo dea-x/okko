@@ -14,7 +14,7 @@ task_1: Реализация данных исходной (source) базы Ora
 ---Таблица событий (таблица фактов)---
 CREATE TABLE FCT_EVENTS ( 
 event_time DATE,
-event_type VARCHAR2(15)
+event_type VARCHAR2(15),
 event_id NUMBER, 
 product_id NUMBER, 
 category_id NUMBER, 
