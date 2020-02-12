@@ -58,7 +58,6 @@ product_id NUMBER,
 name VARCHAR2(100), 
 country VARCHAR2(20), 
 city VARCHAR2(20), 
-address VARCHAR2(50),
 last_update_date TIMESTAMP
 );
 
