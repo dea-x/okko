@@ -43,7 +43,7 @@ last_update_date TIMESTAMP
 CREATE TABLE DIM_PRODUCTS ( 
 product_id NUMBER, 
 category_id NUMBER, 
-category_code VARCHAR2(25), 
+category VARCHAR2(25), 
 brand VARCHAR2(25), 
 description VARCHAR2(250), 
 name VARCHAR2(100), 
