@@ -48,5 +48,3 @@ def producer_stream():
 
 if __name__ == "__main__":
     producer_stream()
-    
-# for test user
