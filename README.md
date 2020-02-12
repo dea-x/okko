@@ -55,9 +55,9 @@ last_update_date TIMESTAMP
 CREATE TABLE DIM_SUPPLIERS ( 
 suppliers_id NUMBER, 
 category VARCHAR2(25), 
-name VARCHAR2(100), 
-country VARCHAR2(100), 
-city VARCHAR2(100), 
+name VARCHAR2(40), 
+country VARCHAR2(40), 
+city VARCHAR2(40), 
 last_update_date TIMESTAMP 
 );
 
