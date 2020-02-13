@@ -18,11 +18,52 @@ CREATE TABLE DIM_SUPPLIERS (
 	last_update_date TIMESTAMP 
 );
 
--- Вставка 4 значений 
-insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, 'Кухня', 'IKEA', 'Россия', 'Москва', systimestamp);
-insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, 'Дом', 'Твой Дом', 'Россия', 'Санкт-Петербург', systimestamp);
-insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, 'Красота', 'Lush', 'Россия', 'Волгоград', systimestamp);
-insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, 'Mobile', 'СитиЛинк', 'Россия', 'Тула', systimestamp);
-commit;
+-- Создание поставщиков. Создается при уловии, 
+-- что поставщика для кода категории еще нет
+declare
+    -- создание массива для хранения городов
+    type arr_type_city is table of varchar2(100)
+    index by binary_integer;
+  
+	category 			VARCHAR2(25);
+	name 				VARCHAR2(40); 
+	country				VARCHAR2(40); 
+	city				varchar2(40);
+    cities     			arr_type_city;
+	city_index			number;
+	flag				number(1);
+ 
+begin
+    cities(1) := 'Москва';
+    cities(2) := 'Санкт-Петербург';
+    cities(3) := 'Волгоград';
+    cities(4) := 'Калининград';
+    cities(5) := 'Астрахань';
+    cities(6) := 'Тула';
+    
+	country := 'Россия';
+	
+	-- получение всех доступных кодов категорий
+	for rowCategory in (select distinct category_code from dim_products) loop
+		-- получаем 1, если этот код уже есть в поставщиках, иначе 0
+		select case when exists(select * from DIM_SUPPLIERS 
+							  where category = rowCategory.category_code)
+				   then 1 
+				   else 0
+			   end  
+			into flag
+			from dual;
+			
+		-- если кода нет, добавляем в таблицу
+		if flag = 0 then
+			city_index := mod(round(DBMS_RANDOM.VALUE * 100), cities.count) + 1;
+			city := cities(city_index);      
 
--- select * from DIM_SUPPLIERS
+			name := 'OOO '||DBMS_RANDOM.STRING('a', 4);   
+		
+			insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, rowCategory.category_code, 
+											  name, country, city, systimestamp);
+		end if;
+	end loop;
+	commit;
+end;
