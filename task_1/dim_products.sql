@@ -55,6 +55,19 @@ insert into products (product, des, category_code) values ('Тостер', 'Бе
 insert into products (product, des, category_code) values ('Эпилятор', 'Набор', 'Красота');
 insert into products (product, des, category_code) values ('Машинка для стрижки', 'Набор', 'Красота');
 insert into products (product, des, category_code) values ('Мультиварка', 'Белая', 'Кухня');
+insert into products (product, des, category_code) values ('ТВ', '4К', 'Дом');
+insert into products (product, des, category_code) values ('Монитор', '20inch', 'Mobile');
+insert into products (product, des, category_code) values ('Монитор', '25inch', 'Mobile');
+insert into products (product, des, category_code) values ('Планшет', '9inch', 'Mobile');
+insert into products (product, des, category_code) values ('Светильник', 'LED', 'Дом');
+insert into products (product, des, category_code) values ('Светильник', '40ВТ', 'Дом');
+insert into products (product, des, category_code) values ('Светильник', '15ВТ', 'Дом');
+insert into products (product, des, category_code) values ('Кондиционер', 'Инвентор', 'Дом');
+insert into products (product, des, category_code) values ('Кондиционер', 'Напольный', 'Дом');
+insert into products (product, des, category_code) values ('Видеокамера', '4К', 'Mobile');
+insert into products (product, des, category_code) values ('Видеокамера', 'FullHD', 'Mobile');
+
+
 
 --статичная таблица брэндов 
 create table brands (brand VARCHAR2(25))
@@ -78,7 +91,7 @@ insert into brands (brand) values ('Polaris');
 --генерируемая таблица товаров
 CREATE TABLE dim_products ( 
 product_id NUMBER, 
-category_id NUMBER, 
+category_id NUMBER, 	
 category_code VARCHAR2(25), 
 brand VARCHAR2(25), 
 description VARCHAR2(250), 
@@ -87,11 +100,24 @@ price NUMBER,
 last_update_date TIMESTAMP
 );
 
+-- наполнение таблицы товаров
+declare 
+  bins number;
+  r number;
+
 begin
-for i in 1..10
+--при создании задаем большое число товаров; если таблица существует, объявляем инкремент
+select count(*)+1 into r from dim_products;
+if (r<11) then 
+    bins := 10;
+else 
+    bins :=2;
+end if;
+for i in 1..bins
 loop 
 insert into dim_products (category_code, description, name, product_id, category_id, brand, price, last_update_date)
-(select ft.category_code, ft.des, ft.product, i,
+(select ft.category_code, ft.des, ft.product,
+(select count(*)+1 from dim_products),
 (select decode(category_code, 'Дом', 1, 'Кухня', 2, 'Красота', 3, 'Mobile', 4) from dual), 
 (select brand from 
 (select brand, dbms_random.value() rnd from brands order by rnd) fetch first 1 rows only),
