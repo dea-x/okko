@@ -21,8 +21,7 @@ category_id NUMBER,
 category VARCHAR2(25), 
 brand VARCHAR2(25), 
 price NUMBER, 
-customer_id NUMBER, 
-customer_session VARCHAR2(50), 
+customer_id NUMBER,  
 CONSTRAINT event_pk PRIMARY KEY (event_id) 
 );
 
