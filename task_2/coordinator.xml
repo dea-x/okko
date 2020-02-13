@@ -1,0 +1,7 @@
+<coordinator-app name="TestTask" frequency="${coord:hours(7)}" start="${startTime}" end="${endTime}" timezone ="GMT" xmlns="uri:oozie:coordinator:0.2">
+<action>
+      <workflow>
+         <app-path>/user/usertest/lp/workflow.xml</app-path>
+      </workflow>
+</action>
+</coordinator-app>
