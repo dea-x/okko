@@ -14,27 +14,26 @@ task_1: Реализация данных исходной (source) базы Ora
 ---Таблица событий (таблица фактов)---
 CREATE TABLE FCT_EVENTS ( 
 event_time DATE, 
-event_type VARCHAR2(100), 
+event_type VARCHAR2(20), 
 event_id NUMBER, 
 product_id NUMBER, 
 category_id NUMBER, 
-category VARCHAR2(100), 
-brand VARCHAR2(100), 
+category VARCHAR2(25), 
+brand VARCHAR2(25), 
 price NUMBER, 
-customer_id NUMBER, 
-customer_session VARCHAR2(100), 
+customer_id NUMBER,  
 CONSTRAINT event_pk PRIMARY KEY (event_id) 
 );
 
 ---Справочник Покупатели---
 CREATE TABLE DIM_CUSTOMERS ( 
 customer_id NUMBER, 
-country VARCHAR2(20), 
-city VARCHAR2(20), 
+country VARCHAR2(30), 
+city VARCHAR2(30), 
 mail VARCHAR2(50), 
 phone VARCHAR2(25), 
-first_name VARCHAR2(20), 
-last_name VARCHAR2(20), 
+first_name VARCHAR2(30), 
+last_name VARCHAR2(30), 
 last_update_date TIMESTAMP 
 );
  
@@ -45,8 +44,8 @@ product_id NUMBER,
 category_id NUMBER, 
 category VARCHAR2(25), 
 brand VARCHAR2(25), 
-description VARCHAR2(250), 
-name VARCHAR2(100), 
+description VARCHAR2(100), 
+name VARCHAR2(30), 
 price NUMBER, 
 last_update_date TIMESTAMP 
 );
@@ -54,10 +53,10 @@ last_update_date TIMESTAMP
 ---Справочник Поставщики---
 CREATE TABLE DIM_SUPPLIERS ( 
 suppliers_id NUMBER, 
-product_id NUMBER, 
-name VARCHAR2(100), 
-country VARCHAR2(100), 
-city VARCHAR2(100), 
+category VARCHAR2(25), 
+name VARCHAR2(40), 
+country VARCHAR2(40), 
+city VARCHAR2(40), 
 last_update_date TIMESTAMP 
 );
 
