@@ -7,31 +7,41 @@ product_id NUMBER,
 customer_id NUMBER
 );
 
+-- заполнение историей короткой таблицы фактов
 declare
-rdn number;
-prod_id number;
-cust_id number;
-tmst date;
-ev_type varchar2(20);
-ev_id number;
-
+  start_date number;
+  end_date number;   
+  rdn number;
+  prod_id number;
+  cust_id number;
+  ev_type varchar2(20);
+  ev_id number;
+  temp timestamp;  
+  delta number;
+  
 begin
-rdn :=dbms_random.value(1000,5000);
+  start_date := to_number(to_char(to_date('2020-02-10', 'yyyy-MM-dd'), 'j')); --начало отсчета 
+  end_date := to_number(to_char(current_timestamp, 'j')); --конечная дата
+  
+  for cur_r in start_date..end_date 
+  loop
+      rdn :=dbms_random.value(1000,5000); --количество транзакций в течение одного дня
+      delta := 24*60*60/rdn; --среднее время между транзакциями
+      select (cast(to_date(cur_r, 'j') as timestamp)) into temp from dual; --инициализация текущего дня
+      for i in 1..rdn
+      loop
+          select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual; --id товара
+          select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual; --id клиента
+          select count(*)+1 into ev_id from fct_short; --id события 
+          select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
+                                        8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий
+          select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация текущей даты
 
-for i in 1..rdn
-loop
-select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual;
-select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
-select count(*) into ev_id from fct_short;
-select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
-                                        8, 'remove', 9, 'purchase') into ev_type from dual;
-select current_timestamp into tmst from dual;
-
-insert into fct_short (event_time, event_id, event_type, product_id, customer_id) values
-(tmst, ev_id, ev_type, prod_id, cust_id);
-
-end loop;
-commit; 
+          insert into fct_short (event_time, event_id, event_type, product_id, customer_id) values
+          (temp, ev_id, ev_type, prod_id, cust_id);
+      end loop;           
+  end loop;
+commit;
 end;
 
 
