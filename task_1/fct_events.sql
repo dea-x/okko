@@ -52,3 +52,39 @@ create table fct_events (event_time, event_type, event_id primary key, product_i
        sh.customer_id
        from fct_short sh
        join dim_products pr on sh.product_id = pr.product_id)
+	   
+-- добавление новых данных в общую таблицу фактов
+declare
+  start_date number;
+  end_date number;   
+  rdn number;
+  prod_id number;
+  cust_id number;
+  ev_type varchar2(20);
+  ev_id number;
+  temp timestamp;  
+  delta number;
+  cc VARCHAR2(25);
+  br VARCHAR2(25);
+  prc NUMBER;
+  
+begin  
+      rdn :=dbms_random.value(400,800); --количество транзакций в течение одного дня
+      delta := 5*60/rdn; --среднее время между транзакциями за 5 мин
+      select current_timestamp into temp from dual; --инициализация текущего времени;
+      for i in 1..rdn
+      loop
+          select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual;
+          select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
+          select count(*)+1 into ev_id from fct_EVENTS;
+          select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
+                                        8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий
+          select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация времени          
+          select category_code into cc from dim_products dim_p where dim_p.product_id = prod_id; --category code из dim_products
+          select brand into br from dim_products dim_p where dim_p.product_id = prod_id;--brand из dim_products
+          select price into prc from dim_products dim_p where dim_p.product_id = prod_id;--price из dim_products
+          insert into fct_events (event_time, event_id, event_type, product_id, customer_id, category_code, brand, price) values
+          (temp, ev_id, ev_type, prod_id, cust_id, cc, br, prc);          
+      end loop;      
+commit;
+end;
