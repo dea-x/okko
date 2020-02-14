@@ -46,8 +46,8 @@ end;
 
 
 -- таблица фактов
-create table fct_events (event_time, event_type, event_id primary key, product_id, category_code, brand, price, customer_id) as 
-(select cast(sh.event_time as timestamp) as event_time, sh.event_type, sh.event_id, sh.product_id prod,
+create table fct_events (event_time, event_type, event_id primary key, product_id, category_id, category_code, brand, price, customer_id) as 
+(select cast(sh.event_time as timestamp) as event_time, sh.event_type, sh.event_id, sh.product_id, pr.category_id,
        pr.category_code, pr.brand, pr.price,
        sh.customer_id
        from fct_short sh
@@ -59,6 +59,7 @@ declare
   end_date number;   
   rdn number;
   prod_id number;
+  cat_id number;
   cust_id number;
   ev_type varchar2(20);
   ev_id number;
@@ -69,8 +70,8 @@ declare
   prc NUMBER;
   
 begin  
-      rdn :=dbms_random.value(400,800); --количество транзакций в течение одного дня
-      delta := 5*60/rdn; --среднее время между транзакциями за 5 мин
+      rdn :=dbms_random.value(17,34); --количество транзакций в сек
+      delta := 5*60/rdn; --среднее время в сек между транзакциями
       select current_timestamp into temp from dual; --инициализация текущего времени;
       for i in 1..rdn
       loop
@@ -78,13 +79,14 @@ begin
           select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
           select count(*)+1 into ev_id from fct_EVENTS;
           select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
-                                        8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий
+                                        8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий                                        
           select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация времени          
           select category_code into cc from dim_products dim_p where dim_p.product_id = prod_id; --category code из dim_products
+          select category_id into cat_id from dim_products dim_p where dim_p.product_id = prod_id;
           select brand into br from dim_products dim_p where dim_p.product_id = prod_id;--brand из dim_products
           select price into prc from dim_products dim_p where dim_p.product_id = prod_id;--price из dim_products
-          insert into fct_events (event_time, event_id, event_type, product_id, customer_id, category_code, brand, price) values
-          (temp, ev_id, ev_type, prod_id, cust_id, cc, br, prc);          
+          insert into fct_events (event_time, event_id, event_type, product_id, category_id, customer_id, category_code, brand, price) values
+          (temp, ev_id, ev_type, prod_id, cat_id, cust_id, cc, br, prc);          
       end loop;      
 commit;
 end;
