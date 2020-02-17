@@ -63,5 +63,7 @@ if __name__ == '__main__':
         .load()
 
     maxID = df1.agg({'last_update_date': 'max'}).collect()[0][0]
+    if maxID == None:
+        maxID = 0
     dfResult = df0.where(sf.col('last_update_date') > maxID).collect()
     producer_to_Kafka(dfResult)
