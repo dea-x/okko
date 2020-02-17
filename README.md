@@ -11,46 +11,23 @@ task_1: Реализация данных исходной (source) базы Ora
 
 Структура таблиц исходной БД:
 
----Таблица событий (таблица фактов)---
-CREATE TABLE FCT_EVENTS ( 
-event_time DATE, 
-event_type VARCHAR2(20), 
-event_id NUMBER, 
-product_id NUMBER, 
-category_id NUMBER, 
-category VARCHAR2(25), 
-brand VARCHAR2(25), 
-price NUMBER, 
-customer_id NUMBER,  
-CONSTRAINT event_pk PRIMARY KEY (event_id) 
-);
 
----Справочник Покупатели---
+**---Справочник Покупатели---**
+
 CREATE TABLE DIM_CUSTOMERS ( 
 customer_id NUMBER, 
-country VARCHAR2(30), 
-city VARCHAR2(30), 
+country VARCHAR2(40), 
+city VARCHAR2(40), 
+phone VARCHAR2(40), 
+first_name VARCHAR2(40), 
+last_name VARCHAR2(40), 
 mail VARCHAR2(50), 
-phone VARCHAR2(25), 
-first_name VARCHAR2(30), 
-last_name VARCHAR2(30), 
-last_update_date TIMESTAMP 
-);
- 
-
----Справочник Товары---
-CREATE TABLE DIM_PRODUCTS ( 
-product_id NUMBER, 
-category_id NUMBER, 
-category VARCHAR2(25), 
-brand VARCHAR2(25), 
-description VARCHAR2(100), 
-name VARCHAR2(30), 
-price NUMBER, 
 last_update_date TIMESTAMP 
 );
 
----Справочник Поставщики---
+
+**---Справочник Поставщики---**
+
 CREATE TABLE DIM_SUPPLIERS ( 
 suppliers_id NUMBER, 
 category VARCHAR2(25), 
@@ -60,6 +37,46 @@ city VARCHAR2(40),
 last_update_date TIMESTAMP 
 );
 
+
+**---Справочник Товары---** 
+
+CREATE TABLE DIM_PRODUCTS ( 
+product_id NUMBER, 
+category_id NUMBER, 
+category_code VARCHAR2(25), 
+brand VARCHAR2(30), 
+description VARCHAR2(100), 
+name VARCHAR2(50), 
+price NUMBER, 
+last_update_date TIMESTAMP 
+);
+
+
+**---Таблица исторических событий---** *не используется в продюсере и консьюмере*
+
+CREATE TABLE FCT_SHORT (
+event_time DATE, 
+event_type VARCHAR2(20), 
+event_id NUMBER, 
+product_id NUMBER,
+customer_id NUMBER
+);
+
+
+**---Таблица событий (таблица фактов)---** 
+
+CREATE TABLE FCT_EVENTS ( 
+event_time TIMESTAMP, 
+event_type VARCHAR2(20), 
+event_id NUMBER, 
+product_id NUMBER, 
+category_id NUMBER, 
+category_code VARCHAR2(25), 
+brand VARCHAR2(30), 
+price NUMBER, 
+customer_id NUMBER,  
+CONSTRAINT event_pk PRIMARY KEY (event_id) 
+)
 
 3. Наполнение исходных таблиц посредством PL/SQL пакета
 4. Добавить job, для запуска пакета по расписанию, через dbms_job (генерация раз в 5-10 минут)

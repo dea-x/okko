@@ -3,8 +3,8 @@
    
    Вызов процедур пакета:
    BEGIN
-       okko.FILL_customers (100);  -- добавление в таблицу покупателей 100 записей
-       okko.FILL_products (100);  -- добавление в таблицу продуктов 100 записей
+       okko.FILL_customers (1);  -- добавление в таблицу покупателей 1 записи
+       okko.FILL_products (1);  -- добавление в таблицу продуктов 1 записи
        okko.FILL_fct_events;  -- добавление записей в таблицу фактов
    END;
 */
@@ -27,7 +27,6 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
          -- создание массива для хранения городов
         type arr_type_city is table of varchar2(100)
         index by binary_integer;
-        
         category             VARCHAR2(25);
         name                 VARCHAR2(40); 
         country                VARCHAR2(40); 
@@ -71,7 +70,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
 
 
     ------------------------------------------------------------------------------
-    ----------------- Процедура наполнения таблицы dim_products -----------------
+    ----------------- Процедура наполнения таблицы DIM_PRODUCTS -----------------
     ------------------------------------------------------------------------------
     PROCEDURE FILL_products (bins IN number) IS
         -- bins number;
@@ -103,16 +102,16 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
 
 
     ------------------------------------------------------------------------------
-    ----------------- Процедура наполнения таблицы DIM_customers -----------------
+    ----------------- Процедура наполнения таблицы DIM_CUSTOMERS -----------------
     ------------------------------------------------------------------------------
     PROCEDURE FILL_customers (c_id_end IN NUMBER) IS
         c_id_st number;
-        c_country VARCHAR2(100); 
-        c_city VARCHAR2(100);  
-        c_phone VARCHAR2(100); 
-        c_fname VARCHAR2(100); 
-        c_lname VARCHAR2(100); 
-        c_mail VARCHAR2(100);
+        c_country VARCHAR2(40); 
+        c_city VARCHAR2(40);  
+        c_phone VARCHAR2(40); 
+        c_fname VARCHAR2(40); 
+        c_lname VARCHAR2(40); 
+        c_mail VARCHAR2(50);
         c_last_update_date TIMESTAMP;
     begin
         -- выбираем максимальный итерируемый id    
@@ -149,37 +148,39 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     ----------------- Процедура наполнения таблицы FCT_EVENTS -----------------
     ------------------------------------------------------------------------------
     PROCEDURE FILL_fct_events IS
-        start_date number;
-        end_date number;   
-        rdn number;
-        prod_id number;
-        cust_id number;
-        ev_type varchar2(20);
-        ev_id number;
-        temp timestamp;  
-        delta number;
-        cc VARCHAR2(25);
-        br VARCHAR2(25);
-        prc NUMBER;
-  
+		start_date number;
+		end_date number;   
+		rdn number;
+		prod_id number;
+		cat_id number;
+		cust_id number;
+		ev_type varchar2(20);
+		ev_id number;
+		temp timestamp;  
+		delta number;
+		cc VARCHAR2(25);
+		br VARCHAR2(25);
+		prc NUMBER;
     begin  
-        rdn := dbms_random.value(400,800); --количество транзакций в течение одной минуты
-        delta := 5*60 / rdn; -- среднее время между транзакциями за 5 мин
-        select current_timestamp into temp from dual; --инициализация текущего времени;
-        for i in 1..rdn loop
-            select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual;
-            select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
-            select count(*)+1 into ev_id from fct_EVENTS;
-            select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
-                                        8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий
-            select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация времени          
-            select category_code into cc from dim_products dim_p where dim_p.product_id = prod_id; --category code из dim_products
-            select brand into br from dim_products dim_p where dim_p.product_id = prod_id;--brand из dim_products
-            select price into prc from dim_products dim_p where dim_p.product_id = prod_id;--price из dim_products
-            insert into fct_events (event_time, event_id, event_type, product_id, customer_id, category_code, brand, price) values
-            (temp, ev_id, ev_type, prod_id, cust_id, cc, br, prc);          
-        end loop;      
-        commit;
+      rdn :=dbms_random.value(17,34); --количество транзакций в сек
+      delta := 5*60/rdn; --среднее время в сек между транзакциями
+      select current_timestamp into temp from dual; --инициализация текущего времени;
+      for i in 1..rdn
+      loop
+          select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual;
+          select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
+          select count(*)+1 into ev_id from fct_EVENTS;
+          select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
+                                        8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий                                        
+          select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация времени          
+          select category_code into cc from dim_products dim_p where dim_p.product_id = prod_id; --category code из dim_products
+          select category_id into cat_id from dim_products dim_p where dim_p.product_id = prod_id;
+          select brand into br from dim_products dim_p where dim_p.product_id = prod_id;--brand из dim_products
+          select price into prc from dim_products dim_p where dim_p.product_id = prod_id;--price из dim_products
+          insert into fct_events (event_time, event_id, event_type, product_id, category_id, customer_id, category_code, brand, price) values
+          (temp, ev_id, ev_type, prod_id, cat_id, cust_id, cc, br, prc);          
+      end loop;      
+      commit;
     end FILL_fct_events;
-    
+
 END OKKO;
