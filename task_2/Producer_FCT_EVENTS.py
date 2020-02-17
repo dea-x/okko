@@ -22,7 +22,7 @@ def producer_to_Kafka(dfResult):
 
     for i in range(len(dfResult)):
         try:
-            event_time = dfResult[i]['EVENT_TIME']
+            event_time = str(dfResult[i]['EVENT_TIME'])
             event_type = dfResult[i]['EVENT_TYPE']
             event_id = int(dfResult[i]['EVENT_ID'])
             product_id = int(dfResult[i]['PRODUCT_ID'])

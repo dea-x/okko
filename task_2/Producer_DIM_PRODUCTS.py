@@ -29,7 +29,7 @@ def producer_to_Kafka(dfResult):
             description = dfResult[i]['DESCRIPTION']
             name = dfResult[i]['NAME']
             price = int(dfResult[i]['PRICE'])
-            last_update_date = dfResult[i]['LAST_UPDATE_DATE']
+            last_update_date = str(dfResult[i]['LAST_UPDATE_DATE'])
 
             values = build_JSON(product_id, category_id, category_code, brand, description, name, price,
                                 last_update_date)
