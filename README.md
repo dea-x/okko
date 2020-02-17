@@ -77,13 +77,6 @@ price NUMBER,
 customer_id NUMBER,  
 CONSTRAINT event_pk PRIMARY KEY (event_id) 
 )
-as 
-(select cast(sh.event_time as timestamp) as event_time, sh.event_type, sh.event_id, sh.product_id, pr.category_id,
-       pr.category_code, pr.brand, pr.price,
-       sh.customer_id
-       from fct_short sh
-       join dim_products pr on sh.product_id = pr.product_id);
-
 
 3. Наполнение исходных таблиц посредством PL/SQL пакета
 4. Добавить job, для запуска пакета по расписанию, через dbms_job (генерация раз в 5-10 минут)
