@@ -64,17 +64,17 @@ commit;
 
 --------------------------------------------------------
 
---PL/SQL: часть для генерации справочника заказчиков--
+**--PL/SQL: часть для генерации справочника заказчиков--**
 
 declare
 	c_id_st number;
     	c_id_end number;
-	c_country VARCHAR2(100); 
-	c_city VARCHAR2(100);  
-	c_phone VARCHAR2(100); 
-	c_fname VARCHAR2(100); 
-	c_lname VARCHAR2(100); 
-	c_mail VARCHAR2(100);
+	c_country VARCHAR2(40); 
+	c_city VARCHAR2(40);  
+	c_phone VARCHAR2(40); 
+	c_fname VARCHAR2(40); 
+	c_lname VARCHAR2(40); 
+	c_mail VARCHAR2(50);
 	c_last_update_date TIMESTAMP;
     
 begin
