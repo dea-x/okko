@@ -11,7 +11,8 @@ task_1: Реализация данных исходной (source) базы Ora
 
 Структура таблиц исходной БД:
 
----Таблица исторических событий--- *не используется в продюсере и консьюмере*
+**---Таблица исторических событий---** *не используется в продюсере и консьюмере*
+
 CREATE TABLE FCT_SHORT (
 event_time DATE, 
 event_type VARCHAR2(20), 
@@ -20,7 +21,8 @@ product_id NUMBER,
 customer_id NUMBER
 );
 
----Таблица событий (таблица фактов)--- 
+**---Таблица событий (таблица фактов)---** 
+
 CREATE TABLE FCT_EVENTS ( 
 event_time DATE, 
 event_type VARCHAR2(20), 
@@ -38,11 +40,10 @@ as
        pr.category_code, pr.brand, pr.price,
        sh.customer_id
        from fct_short sh
-       join dim_products pr on sh.product_id = pr.product_id)
+       join dim_products pr on sh.product_id = pr.product_id);
 
-;
+**---Справочник Покупатели---**
 
----Справочник Покупатели---
 CREATE TABLE DIM_CUSTOMERS ( 
 customer_id NUMBER, 
 country VARCHAR2(40), 
@@ -54,7 +55,8 @@ mail VARCHAR2(50),
 last_update_date TIMESTAMP 
 );
 
----Справочник Поставщики--- 
+**---Справочник Поставщики---**
+
 CREATE TABLE DIM_SUPPLIERS ( 
 suppliers_id NUMBER, 
 category VARCHAR2(25), 
@@ -64,7 +66,8 @@ city VARCHAR2(40),
 last_update_date TIMESTAMP 
 );
 
----Справочник Товары--- 
+**---Справочник Товары---** 
+
 CREATE TABLE DIM_PRODUCTS ( 
 product_id NUMBER, 
 category_id NUMBER, 
