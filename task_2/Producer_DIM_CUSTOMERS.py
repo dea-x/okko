@@ -33,7 +33,7 @@ def producer_to_Kafka(dfResult):
 
             values = build_JSON(customer_id, country, city, phone, first_name, last_name, mail, last_update_date)
             print(values)
-            future = producer.send(TOPIC, key=str('DIM_CUSTOMERS'), value=values)
+            future = producer.send(TOPIC, key=str('dim_customers'), value=values)
 
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
@@ -42,23 +42,23 @@ def producer_to_Kafka(dfResult):
 
 
 if __name__ == '__main__':
-    TOPIC = 'ecom'
+    TOPIC = 'dim_customers'
     df0 = spark.read \
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.102:1521:orcl") \
-        .option("dbtable", "fct_events") \
+        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:orcl") \
+        .option("dbtable", "dim_customers") \
         .option("user", "test_user") \
-        .option("password", "1234") \
+        .option("password", "test_user") \
         .load()
 
     df1 = spark.read \
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.102:1521:orcl") \
-        .option("dbtable", "fct_events_test") \
+        .option("url", "jdbc:oracle:thin:@192.168.88.95:1521:orcl") \
+        .option("dbtable", "dim_customers") \
         .option("user", "test_user") \
-        .option("password", "1234") \
+        .option("password", "test_user") \
         .load()
 
     maxID = df0.agg({'last_update_date': 'max'}).collect()[0][0]
