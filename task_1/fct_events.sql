@@ -46,8 +46,18 @@ end;
 
 
 -- таблица фактов
-create table fct_events (event_time, event_type, event_id primary key, product_id, category_id, category_code, brand, price, customer_id) as 
-(select cast(sh.event_time as timestamp) as event_time, sh.event_type, sh.event_id, sh.product_id, pr.category_id,
+CREATE TABLE FCT_EVENTS (
+event_time TIMESTAMP,
+event_type VARCHAR2(20),
+event_id NUMBER, product_id NUMBER,
+category_id NUMBER,
+category_code VARCHAR2(25),
+brand VARCHAR2(30), price NUMBER,
+customer_id NUMBER,
+CONSTRAINT event_pk PRIMARY KEY (event_id)
+)
+
+INSERT INTO FCT_EVENTS (select cast(sh.event_time as timestamp) as event_time, sh.event_type, sh.event_id, sh.product_id, pr.category_id,
        pr.category_code, pr.brand, pr.price,
        sh.customer_id
        from fct_short sh
