@@ -28,15 +28,14 @@ CONSTRAINT event_pk PRIMARY KEY (event_id)
 ---Справочник Покупатели---
 CREATE TABLE DIM_CUSTOMERS ( 
 customer_id NUMBER, 
-country VARCHAR2(30), 
-city VARCHAR2(30), 
-mail VARCHAR2(50), 
-phone VARCHAR2(25), 
-first_name VARCHAR2(30), 
-last_name VARCHAR2(30), 
+country VARCHAR2(40), 
+city VARCHAR2(40), 
+phone VARCHAR2(40), 
+first_name VARCHAR2(40), 
+last_name VARCHAR2(40), 
+mail VARCHAR2(50),
 last_update_date TIMESTAMP 
 );
- 
 
 ---Справочник Товары---
 CREATE TABLE DIM_PRODUCTS ( 
