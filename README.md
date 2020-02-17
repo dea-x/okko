@@ -46,7 +46,7 @@ category_id NUMBER,
 category_code VARCHAR2(25), 
 brand VARCHAR2(30), 
 description VARCHAR2(100), 
-name VARCHAR2(30), 
+name VARCHAR2(50), 
 price NUMBER, 
 last_update_date TIMESTAMP 
 );
