@@ -46,7 +46,7 @@ if __name__ == '__main__':
     df0 = spark.read \
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:orcl") \
+        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:oradb") \
         .option("dbtable", "dim_customers") \
         .option("user", "test_user") \
         .option("password", "test_user") \
