@@ -43,6 +43,8 @@ def producer_to_Kafka(dfResult):
 
 if __name__ == '__main__':
     TOPIC = 'dim_customers'
+
+    # Creating a dataframe for the source table
     df0 = spark.read \
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
@@ -52,6 +54,7 @@ if __name__ == '__main__':
         .option("password", "test_user") \
         .load()
 
+    # Creating a dataframe for the recipient table
     df1 = spark.read \
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
@@ -61,6 +64,6 @@ if __name__ == '__main__':
         .option("password", "test_user") \
         .load()
 
-    maxID = df0.agg({'last_update_date': 'max'}).collect()[0][0]
-    res = df1.where(sf.col('last_update_date') > maxID).collect()
-    producer_to_Kafka(res)
+    maxID = df1.agg({'last_update_date': 'max'}).collect()[0][0]
+    dfResult = df0.where(sf.col('last_update_date') > maxID).collect()
+    producer_to_Kafka(dfResult)
