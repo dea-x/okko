@@ -9,9 +9,9 @@ def serializer():
 
 
 # Serialization in JSON
-def build_JSON(event_time, event_id, product_id, category_id, category_code, brand, price, customer_id):
-    data = dict(event_time=event_time, event_id=event_id, product_id=product_id, category_id=category_id,
-                category_code=category_code, brand=brand, price=price, customer_id=customer_id)
+def build_JSON(event_time, event_type, event_id, product_id, category_id, category_code, brand, price, customer_id):
+    data = dict(event_time=event_time, event_type=event_type, event_id=event_id, product_id=product_id,
+                category_id=category_id, category_code=category_code, brand=brand, price=price, customer_id=customer_id)
     return json.dumps(data)
 
 
@@ -23,6 +23,7 @@ def producer_to_Kafka(dfResult):
     for i in range(len(dfResult)):
         try:
             event_time = dfResult[i]['EVENT_TIME']
+            event_type = dfResult[i]['EVENT_TYPE']
             event_id = int(dfResult[i]['EVENT_ID'])
             product_id = int(dfResult[i]['PRODUCT_ID'])
             category_id = int(dfResult[i]['CATEGORY_ID'])
@@ -31,7 +32,8 @@ def producer_to_Kafka(dfResult):
             price = int(dfResult[i]['PRICE'])
             customer_id = int(dfResult[i]['CUSTOMER_ID'])
 
-            values = build_JSON(event_time, event_id, product_id, category_id, category_code, brand, price, customer_id)
+            values = build_JSON(event_time, event_type, event_id, product_id, category_id, category_code, brand, price,
+                                customer_id)
             print(values)
             future = producer.send(TOPIC, key=str('fct_events'), value=values)
 
