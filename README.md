@@ -11,21 +11,9 @@ task_1: Реализация данных исходной (source) базы Ora
 
 Структура таблиц исходной БД:
 
----Таблица событий (таблица фактов)---
-CREATE TABLE FCT_EVENTS ( 
-event_time DATE, 
-event_type VARCHAR2(20), 
-event_id NUMBER, 
-product_id NUMBER, 
-category_id NUMBER, 
-category VARCHAR2(25), 
-brand VARCHAR2(25), 
-price NUMBER, 
-customer_id NUMBER,  
-CONSTRAINT event_pk PRIMARY KEY (event_id) 
-);
 
----Справочник Покупатели---
+**---Справочник Покупатели---**
+
 CREATE TABLE DIM_CUSTOMERS ( 
 customer_id NUMBER, 
 country VARCHAR2(40), 
@@ -33,23 +21,13 @@ city VARCHAR2(40),
 phone VARCHAR2(40), 
 first_name VARCHAR2(40), 
 last_name VARCHAR2(40), 
-mail VARCHAR2(50),
+mail VARCHAR2(50), 
 last_update_date TIMESTAMP 
 );
 
----Справочник Товары---
-CREATE TABLE DIM_PRODUCTS ( 
-product_id NUMBER, 
-category_id NUMBER, 
-category VARCHAR2(25), 
-brand VARCHAR2(25), 
-description VARCHAR2(100), 
-name VARCHAR2(30), 
-price NUMBER, 
-last_update_date TIMESTAMP 
-);
 
----Справочник Поставщики---
+**---Справочник Поставщики---**
+
 CREATE TABLE DIM_SUPPLIERS ( 
 suppliers_id NUMBER, 
 category VARCHAR2(25), 
@@ -58,6 +36,53 @@ country VARCHAR2(40),
 city VARCHAR2(40), 
 last_update_date TIMESTAMP 
 );
+
+
+**---Справочник Товары---** 
+
+CREATE TABLE DIM_PRODUCTS ( 
+product_id NUMBER, 
+category_id NUMBER, 
+category_code VARCHAR2(25), 
+brand VARCHAR2(30), 
+description VARCHAR2(100), 
+name VARCHAR2(30), 
+price NUMBER, 
+last_update_date TIMESTAMP 
+);
+
+
+**---Таблица исторических событий---** *не используется в продюсере и консьюмере*
+
+CREATE TABLE FCT_SHORT (
+event_time DATE, 
+event_type VARCHAR2(20), 
+event_id NUMBER, 
+product_id NUMBER,
+customer_id NUMBER
+);
+
+
+**---Таблица событий (таблица фактов)---** 
+
+CREATE TABLE FCT_EVENTS ( 
+event_time TIMESTAMP, 
+event_type VARCHAR2(20), 
+event_id NUMBER, 
+product_id NUMBER, 
+category_id NUMBER, 
+category_code VARCHAR2(25), 
+brand VARCHAR2(30), 
+price NUMBER, 
+customer_id NUMBER,  
+CONSTRAINT event_pk PRIMARY KEY (event_id) 
+)
+as 
+(select cast(sh.event_time as timestamp) as event_time, sh.event_type, sh.event_id, sh.product_id, pr.category_id,
+       pr.category_code, pr.brand, pr.price,
+       sh.customer_id
+       from fct_short sh
+       join dim_products pr on sh.product_id = pr.product_id);
 
 
 3. Наполнение исходных таблиц посредством PL/SQL пакета
