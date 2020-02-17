@@ -27,7 +27,6 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
          -- создание массива для хранения городов
         type arr_type_city is table of varchar2(100)
         index by binary_integer;
-        
         category             VARCHAR2(25);
         name                 VARCHAR2(40); 
         country                VARCHAR2(40); 
@@ -162,8 +161,6 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
 		cc VARCHAR2(25);
 		br VARCHAR2(25);
 		prc NUMBER;
-	
-
     begin  
       rdn :=dbms_random.value(17,34); --количество транзакций в сек
       delta := 5*60/rdn; --среднее время в сек между транзакциями
@@ -183,8 +180,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
           insert into fct_events (event_time, event_id, event_type, product_id, category_id, customer_id, category_code, brand, price) values
           (temp, ev_id, ev_type, prod_id, cat_id, cust_id, cc, br, prc);          
       end loop;      
-	commit;
-end FILL_fct_events;
+      commit;
+    end FILL_fct_events;
 
-    
 END OKKO;
