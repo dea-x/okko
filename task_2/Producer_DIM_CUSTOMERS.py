@@ -59,7 +59,7 @@ if __name__ == '__main__':
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
         .option("url", "jdbc:oracle:thin:@192.168.88.95:1521:orcl") \
-        .option("dbtable", "dim_customers") \
+        .option("dbtable", "DIM_CUSTOMERS") \
         .option("user", "test_user") \
         .option("password", "test_user") \
         .load()
