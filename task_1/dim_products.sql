@@ -1,8 +1,8 @@
 --статичная таблица с перечнем товаров
 create table products (
-    product         VARCHAR2(50),
-    des             VARCHAR2(100),
-    category_code   VARCHAR2(25)
+    product        VARCHAR2(50),
+    des            VARCHAR2(100),
+    category_code  VARCHAR2(25)
 );
 
 insert into products (product, des, category_code) values ('Кофеварка', 'Рожковая', 'Кухня');
