@@ -21,18 +21,18 @@ CREATE TABLE FCT_EVENTS_part(
     CONSTRAINT FCT_EVENTS_part_pk PRIMARY KEY (event_id)
 )
 PARTITION BY RANGE(event_time)(
-    PARTITION JAN values less than (to_date('01.02.2020','DD.MM.YYYY')),
-    PARTITION FEB values less than (to_date('01.03.2020','DD.MM.YYYY')),
-    PARTITION MAR values less than (to_date('01.04.2020','DD.MM.YYYY')),
-    PARTITION APR values less than (to_date('01.05.2020','DD.MM.YYYY')),
-    PARTITION MAY values less than (to_date('01.06.2020','DD.MM.YYYY')),
-    PARTITION JUL values less than (to_date('01.07.2020','DD.MM.YYYY')),
-    PARTITION AUG values less than (to_date('01.08.2020','DD.MM.YYYY')),
-    PARTITION SEP values less than (to_date('01.09.2020','DD.MM.YYYY')),
-    PARTITION OCT values less than (to_date('01.10.2020','DD.MM.YYYY')),
-    PARTITION JUN values less than (to_date('01.11.2020','DD.MM.YYYY')),
-    PARTITION NOV values less than (to_date('01.12.2020','DD.MM.YYYY')),
-    PARTITION DEC values less than (maxvalue)
+    PARTITION MAR values less than (to_date('01.04.2019','DD.MM.YYYY')),
+    PARTITION APR values less than (to_date('01.05.2019','DD.MM.YYYY')),
+    PARTITION MAY values less than (to_date('01.06.2019','DD.MM.YYYY')),
+    PARTITION JUL values less than (to_date('01.07.2019','DD.MM.YYYY')),
+    PARTITION AUG values less than (to_date('01.08.2019','DD.MM.YYYY')),
+    PARTITION SEP values less than (to_date('01.09.2019','DD.MM.YYYY')),
+    PARTITION OCT values less than (to_date('01.10.2019','DD.MM.YYYY')),
+    PARTITION JUN values less than (to_date('01.11.2019','DD.MM.YYYY')),
+    PARTITION NOV values less than (to_date('01.12.2019','DD.MM.YYYY')),
+	PARTITION DEC values less than (to_date('01.01.2020','DD.MM.YYYY')),
+	PARTITION JAN values less than (to_date('01.02.2020','DD.MM.YYYY')),
+    PARTITION FEB values less than (maxvalue)
 );
 
 -- Для исследования влияния времени лучше использовать разбиение по хеш функции.
