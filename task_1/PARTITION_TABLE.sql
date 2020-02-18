@@ -8,7 +8,7 @@ END;
 
 -- Создание таблицы с партицированием по месяцам
 CREATE TABLE FCT_EVENTS_part(
-    event_time TIMESTAMP,
+    event_time DATE,
     event_type VARCHAR2(20),
     event_id NUMBER,
     product_id NUMBER,
