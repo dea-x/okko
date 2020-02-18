@@ -22,7 +22,7 @@ phone VARCHAR2(40),
 first_name VARCHAR2(40), 
 last_name VARCHAR2(40), 
 mail VARCHAR2(50), 
-last_update_date TIMESTAMP 
+last_update_date DATE
 );
 
 
@@ -34,7 +34,7 @@ category VARCHAR2(25),
 name VARCHAR2(40), 
 country VARCHAR2(40), 
 city VARCHAR2(40), 
-last_update_date TIMESTAMP 
+last_update_date DATE
 );
 
 
@@ -48,7 +48,7 @@ brand VARCHAR2(30),
 description VARCHAR2(100), 
 name VARCHAR2(50), 
 price NUMBER, 
-last_update_date TIMESTAMP 
+last_update_date DATE 
 );
 
 
@@ -66,7 +66,7 @@ customer_id NUMBER
 **---Таблица событий (таблица фактов)---** 
 
 CREATE TABLE FCT_EVENTS ( 
-event_time TIMESTAMP, 
+event_time DATE, 
 event_type VARCHAR2(20), 
 event_id NUMBER, 
 product_id NUMBER, 
