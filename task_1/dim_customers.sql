@@ -1,9 +1,9 @@
 --Таблица справочник имен--
 
 CREATE TABLE DIM_NAMES (
-id NUMBER,
-name VARCHAR2(20),
-gender VARCHAR(2)
+	id NUMBER,
+	name VARCHAR2(20),
+	gender VARCHAR(2)
 );
 
 insert into DIM_NAMES VALUES (1, 'Владислав', 'м');
@@ -33,10 +33,10 @@ commit;
 
 --Таблица справочник фамилий--
 
- CREATE TABLE DIM_LASTNAMES (
-id NUMBER,
-name VARCHAR2(20),
-gender VARCHAR(2)
+CREATE TABLE DIM_LASTNAMES (
+	id NUMBER,
+	name VARCHAR2(20),
+	gender VARCHAR(2)
 );
 
 insert into DIM_LASTNAMES VALUES (1, 'Иванов', 'м');
@@ -75,7 +75,7 @@ declare
 	c_fname VARCHAR2(40); 
 	c_lname VARCHAR2(40); 
 	c_mail VARCHAR2(50);
-	c_last_update_date TIMESTAMP;
+	c_last_update_date DATE;
     
 begin
     -- выбираем максимальный итерируемый id    
@@ -100,7 +100,7 @@ begin
                         select name into c_lname from (select name, dbms_random.value() rnd from dim_lastnames where gender = 'м' order by rnd) fetch first 1 rows only;
                     end if;
                 select DBMS_RANDOM.STRING('U',1)||DBMS_RANDOM.STRING('L', DBMS_RANDOM.VALUE(4,8))||decode(abs(mod(DBMS_RANDOM.RANDOM, 3)), 0, '@gmail.com', 1, '@mail.ru', 2, '@ya.ru') into c_mail from dual;
-                select CURRENT_TIMESTAMP into c_last_update_date from dual;
+                select SYSDATE into c_last_update_date from dual;
 		-- вставляем сгенерированные данные в конечный справочник DIM_CUSTOMERS
                 insert into dim_customers values (c_id_st, c_country, c_city, c_phone, c_fname, c_lname, c_mail, c_last_update_date);
                 c_id_st := c_id_st + 1;

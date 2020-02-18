@@ -6,22 +6,22 @@ import time
 
 START = 0
 PARTITION = 0
-TOPIC = "test_topic"
+TOPIC = "dim_products"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
-HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko"
+HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/dim_products"
 
 HOST_IP = "192.168.88.95"
 PORT = "1521"
 SID = "orcl"
 
-TARGET_DB_TABLE_NAME = "sales" 
+TARGET_DB_TABLE_NAME = "DIM_PRODUCTS" 
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
 
 def parse(line):
     data = json.loads(line)
-    return data['event_time'], data['event_id'], data['product_id'], data['category_id'], data['category_code'], data['brand'], data['price'], data['customer_id'], data['customer_session']
+    return data['product_id'], data['category_id'], data['category_code'], data['brand'], data['description'], data['name'], data['price'], data['last_update_date']
     
 def deserializer():
     return bytes.decode
@@ -31,9 +31,8 @@ def save_data(rdd):
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
-        result = spark.sql("select _1 as event_time,_2 as event_id,_3 as product_id,_4 as category_id,_5 as category_code,_6 as brand,_7 as price,_8 as customer_id,_9 as customer_session from t")
-        START = rdd.map(lambda x: x[3])
-        print(START)
+        result = spark.sql("select _1 as product_id,_2 as category_id,_3 as category_code,_4 as brand,_5 as description,_6 as name,_7 as price,_8 as last_update_date from t")
+        
         # Writing to HDFS
         result.write \
             .format("csv") \
@@ -62,20 +61,18 @@ def storeOffsetRanges(rdd):
   
 def printOffsetRanges(rdd):
     for o in offsetRanges:
-        f = open('offset_value.txt', 'w')
+        f = open('offset_value_dim_products.txt', 'w')
         f.write(str(o.untilOffset))
-        print(type(o.untilOffset))
         f.close()
 
 if __name__ == "__main__":
     ssc = StreamingContext(sc, 5)
     topicPartion = TopicAndPartition(TOPIC,PARTITION)
-    f = open('offset_value.txt', 'r')
+    f = open('offset_value_dim_products.txt', 'r')
     start = int(f.read())
     f.close()
     fromOffset = {topicPartion: start}
     kafkaParams = {"metadata.broker.list": BROKER_LIST}
-    #kafkaParams["group.id"] = "my-group"
     kafkaParams["enable.auto.commit"] = "false"
 
     directKafkaStream = KafkaUtils.createDirectStream(ssc, [TOPIC], kafkaParams, fromOffsets=fromOffset, keyDecoder=deserializer(), valueDecoder=deserializer())

@@ -29,7 +29,7 @@ def producer_to_Kafka(dfResult):
             description = dfResult[i]['DESCRIPTION']
             name = dfResult[i]['NAME']
             price = int(dfResult[i]['PRICE'])
-            last_update_date = dfResult[i]['LAST_UPDATE_DATE']
+            last_update_date = str(dfResult[i]['LAST_UPDATE_DATE'])
 
             values = build_JSON(product_id, category_id, category_code, brand, description, name, price,
                                 last_update_date)
@@ -44,24 +44,29 @@ def producer_to_Kafka(dfResult):
 
 if __name__ == '__main__':
     TOPIC = 'dim_products'
+
+    # Creating a dataframe for the source table
     df0 = spark.read \
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:orcl") \
+        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:oradb") \
         .option("dbtable", "dim_products") \
         .option("user", "test_user") \
         .option("password", "test_user") \
         .load()
 
+    # Creating a dataframe for the recipient table
     df1 = spark.read \
         .format("jdbc") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
         .option("url", "jdbc:oracle:thin:@192.168.88.95:1521:orcl") \
-        .option("dbtable", "dim_products") \
+        .option("dbtable", "DIM_PRODUCTS") \
         .option("user", "test_user") \
         .option("password", "test_user") \
         .load()
 
-    maxID = df0.agg({'last_update_date': 'max'}).collect()[0][0]
-    res = df1.where(sf.col('last_update_date') > maxID).collect()
-    producer_to_Kafka(res)
+    maxID = df1.agg({'last_update_date': 'max'}).collect()[0][0]
+    if maxID == None:
+        maxID = 0
+    dfResult = df0.where(sf.col('last_update_date') > maxID).collect()
+    producer_to_Kafka(dfResult)
