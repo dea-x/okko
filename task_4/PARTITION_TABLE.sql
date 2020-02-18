@@ -30,8 +30,8 @@ PARTITION BY RANGE(event_time)(
     PARTITION OCT values less than (to_date('01.10.2019','DD.MM.YYYY')),
     PARTITION JUN values less than (to_date('01.11.2019','DD.MM.YYYY')),
     PARTITION NOV values less than (to_date('01.12.2019','DD.MM.YYYY')),
-	PARTITION DEC values less than (to_date('01.01.2020','DD.MM.YYYY')),
-	PARTITION JAN values less than (to_date('01.02.2020','DD.MM.YYYY')),
+    PARTITION DEC values less than (to_date('01.01.2020','DD.MM.YYYY')),
+    PARTITION JAN values less than (to_date('01.02.2020','DD.MM.YYYY')),
     PARTITION FEB values less than (maxvalue)
 );
 
