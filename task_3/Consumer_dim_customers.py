@@ -31,7 +31,9 @@ def save_data(rdd):
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
-        result = spark.sql("select _1 as customer_id,_2 as country,_3 as city,_4 as phone,_5 as first_name,_6 as last_name,_7 as mail,_8 as last_update_date from t")
+        result = spark.sql("select _1 as customer_id,_2 as country,_3 as city,_4 as phone,_5 as first_name,_6 as last_name,_7 as mail,to_timestamp(_8) as last_update_date from t")
+        START = rdd.map(lambda x: x[3])
+        print(START)
         
         # Writing to HDFS
         result.write \
