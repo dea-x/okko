@@ -187,7 +187,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         prc                  NUMBER;
         procedure_name       VARCHAR2(1000) := 'FILL_FCT_EVENTS';
     begin  
-        rdn := dbms_random.value(17, 34); --количество транзакций в сек
+        rdn := dbms_random.value(5100, 10200); --количество транзакций в сек
         delta := 5 * 60 / rdn; --среднее время в сек между транзакциями
         select SYSDATE into temp from dual; --инициализация текущего времени;
         for i in 1..rdn
