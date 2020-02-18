@@ -49,7 +49,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         cities               arr_type_city;
         city_index           NUMBER;
         flag                 NUMBER(1);
-        procedure_name       VARCHAR2(1000) := 'FILL_SUPPLIERS';
+        procedure_name       VARCHAR2(100) := 'FILL_SUPPLIERS';
         
     BEGIN
         cities(1) := 'Москва';
@@ -93,7 +93,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     PROCEDURE FILL_PRODUCTS (bins IN NUMBER) IS
         -- bins number;
         r                    NUMBER;
-        procedure_name       VARCHAR2(1000) := 'FILL_PRODUCTS';
+        procedure_name       VARCHAR2(100) := 'FILL_PRODUCTS';
     begin
         -- при создании задаем большое число товаров; если таблица существует, объявляем инкремент
         -- select count(*)+1 into r from dim_products;
@@ -134,7 +134,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         c_lname              VARCHAR2(40); 
         c_mail               VARCHAR2(50);
         c_last_update_date   DATE;
-        procedure_name       VARCHAR2(1000) := 'FILL_CUSTOMERS';
+        procedure_name       VARCHAR2(100) := 'FILL_CUSTOMERS';
     begin
         -- выбираем максимальный итерируемый id    
         select max(customer_id) into c_id_st from dim_customers;
@@ -185,7 +185,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         cc                   VARCHAR2(25);
         br                   VARCHAR2(25);
         prc                  NUMBER;
-        procedure_name       VARCHAR2(1000) := 'FILL_FCT_EVENTS';
+        procedure_name       VARCHAR2(100) := 'FILL_FCT_EVENTS';
     begin  
         rdn := dbms_random.value(5100, 10200); --количество транзакций в сек
         delta := 5 * 60 / rdn; --среднее время в сек между транзакциями
