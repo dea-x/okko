@@ -1,8 +1,8 @@
 --статичная таблица с перечнем товаров
 create table products (
-product VARCHAR2(100),
-des VARCHAR2(250),
-category_code VARCHAR2(25)
+    product         VARCHAR2(50),
+    des             VARCHAR2(100),
+    category_code   VARCHAR2(25)
 );
 
 insert into products (product, des, category_code) values ('Кофеварка', 'Рожковая', 'Кухня');
@@ -70,7 +70,7 @@ insert into products (product, des, category_code) values ('Видеокамер
 
 
 --статичная таблица брэндов 
-create table brands (brand VARCHAR2(25))
+create table brands (brand VARCHAR2(30))
 insert into brands (brand) values ('LG');
 insert into brands (brand) values ('Samsung');
 insert into brands (brand) values ('Philips');
@@ -90,43 +90,43 @@ insert into brands (brand) values ('Polaris');
 
 --генерируемая таблица товаров
 CREATE TABLE dim_products ( 
-product_id NUMBER, 
-category_id NUMBER, 	
-category_code VARCHAR2(25), 
-brand VARCHAR2(25), 
-description VARCHAR2(250), 
-name VARCHAR2(100), 
-price NUMBER,
-last_update_date TIMESTAMP
+    product_id         NUMBER, 
+    category_id        NUMBER, 	
+    category_code      VARCHAR2(25), 
+    brand              VARCHAR2(30), 
+    description        VARCHAR2(100), 
+    name               VARCHAR2(50), 
+    price              NUMBER,
+    last_update_date   DATE
 );
 
 -- наполнение таблицы товаров
 declare 
   bins number;
-  r number;
+  r    number;
 
 begin
 --при создании задаем большое число товаров; если таблица существует, объявляем инкремент
-select count(*)+1 into r from dim_products;
-if (r<11) then 
-    bins := 10;
-else 
-    bins :=2;
-end if;
-for i in 1..bins
-loop 
-insert into dim_products (category_code, description, name, product_id, category_id, brand, price, last_update_date)
-(select ft.category_code, ft.des, ft.product,
-(select count(*)+1 from dim_products),
-(select decode(category_code, 'Дом', 1, 'Кухня', 2, 'Красота', 3, 'Mobile', 4) from dual), 
-(select brand from 
-(select brand, dbms_random.value() rnd from brands order by rnd) fetch first 1 rows only),
-round(dbms_random.value(2000, 10000)),
-CURRENT_TIMESTAMP
-from 
-(select category_code, product, des, dbms_random.value(1, (select count(*) from products)) rd 
-from products order by rd) ft fetch first 1 rows only
-);
-end loop;
-commit;
+    select count(*)	+1 into r from dim_products;
+    if (r<11) then 
+        bins := 10;
+    else 
+        bins :=2;
+    end if;
+    for i in 1..bins
+        loop 
+        insert into dim_products (category_code, description, name, product_id, category_id, brand, price, last_update_date)
+            (select ft.category_code, ft.des, ft.product,
+            (select count(*)+1 from dim_products),
+            (select decode(category_code, 'Дом', 1, 'Кухня', 2, 'Красота', 3, 'Mobile', 4) from dual), 
+            (select brand from 
+            (select brand, dbms_random.value() rnd from brands order by rnd) fetch first 1 rows only),
+            round(dbms_random.value(2000, 10000)),
+            SYSDATE
+        from 
+            (select category_code, product, des, dbms_random.value(1, (select count(*) from products)) rd 
+            from products order by rd) ft fetch first 1 rows only
+        );
+    end loop;
+    commit;
 end;
