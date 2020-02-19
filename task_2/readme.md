@@ -38,7 +38,7 @@ _PythonPath,input-data,output-data,workflowPath_ - путь до python файл
 
 _startTime - endTime_ - нужынй период, работающий только в формате yyyy-MM-dd'T'HH:mm'Z'(нужно задавать время на 3 часа назад, чтобы обойти баг с timezone)
 
-_step_ - шаг повторения, задается как coord:minutes/hours/days/months(int n) 
+_step_ - шаг повторения, задается как int в минутах
 
 _coordinator_name_ - имя для координатора
 

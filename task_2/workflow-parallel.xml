@@ -1,6 +1,10 @@
 <workflow-app xmlns='uri:oozie:workflow:0.1' name='${workflow_name}'>
-    <start to='spark-node1'/>
-    <action name='spark-node1'>
+    <start to="forking"/>
+     <fork name="forking">
+      <path start="spark-process_1"/>
+      <path start="spark-process_2"/>
+    </fork>
+    <action name='spark-process_1'>
         <spark xmlns="uri:oozie:spark-action:0.1">
             <job-tracker>${jobTracker}</job-tracker>
             <name-node>${nameNode}</name-node>
@@ -12,10 +16,10 @@
              <spark-opts>
              </spark-opts>
         </spark>
-        <ok to="spark-node2" />
+        <ok to="joining" />
         <error to="kill" />
     </action>
-     <action name='spark-node2'>
+     <action name='spark-process_2'>
         <spark xmlns="uri:oozie:spark-action:0.1">
             <job-tracker>${jobTracker}</job-tracker>
             <name-node>${nameNode}</name-node>
@@ -27,9 +31,10 @@
              <spark-opts>
              </spark-opts>
         </spark>
-        <ok to="end" />
+        <ok to="joining" />
         <error to="kill" />
     </action>
+    <join name="joining" to="end"/>
     <kill name="kill">
         <message>Workflow failed, error
             message[${wf:errorMessage(wf:lastErrorNode())}]
