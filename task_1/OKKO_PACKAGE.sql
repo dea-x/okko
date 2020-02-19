@@ -49,7 +49,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         cities               arr_type_city;
         city_index           NUMBER;
         flag                 NUMBER(1);
-        procedure_name       VARCHAR2(1000) := 'FILL_SUPPLIERS';
+        procedure_name       VARCHAR2(100) := 'FILL_SUPPLIERS';
         
     BEGIN
         cities(1) := 'Москва';
@@ -73,10 +73,8 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
             -- если кода нет, добавляем в таблицу
             if flag = 0 then
                 city_index := mod(round(DBMS_RANDOM.VALUE * 100), cities.count) + 1;
-                city := cities(city_index);      
-
-                name := 'OOO '||DBMS_RANDOM.STRING('a', 4);   
-            
+                city := cities(city_index);
+                name := 'OOO '||DBMS_RANDOM.STRING('a', 4);
                 insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, rowCategory.category_code, 
                                                   name, country, city, sysdate);
             end if;
@@ -93,7 +91,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     PROCEDURE FILL_PRODUCTS (bins IN NUMBER) IS
         -- bins number;
         r                    NUMBER;
-        procedure_name       VARCHAR2(1000) := 'FILL_PRODUCTS';
+        procedure_name       VARCHAR2(100) := 'FILL_PRODUCTS';
     begin
         -- при создании задаем большое число товаров; если таблица существует, объявляем инкремент
         -- select count(*)+1 into r from dim_products;
@@ -127,6 +125,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     ------------------------------------------------------------------------------
     PROCEDURE FILL_CUSTOMERS (c_id_end IN NUMBER) IS
         c_id_st              NUMBER;
+        step                 NUMBER;
         c_country            VARCHAR2(40); 
         c_city               VARCHAR2(40);  
         c_phone              VARCHAR2(40); 
@@ -134,7 +133,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         c_lname              VARCHAR2(40); 
         c_mail               VARCHAR2(50);
         c_last_update_date   DATE;
-        procedure_name       VARCHAR2(1000) := 'FILL_CUSTOMERS';
+        procedure_name       VARCHAR2(100) := 'FILL_CUSTOMERS';
     begin
         -- выбираем максимальный итерируемый id    
         select max(customer_id) into c_id_st from dim_customers;
@@ -146,7 +145,9 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         -- выставляем количество шагов итерации
         -- c_id_end := c_id_st + 20;
         -- выполяем итерацию пока
-        while c_id_st <= c_id_end loop
+        step := c_id_end + c_id_st;
+        while c_id_st < step loop
+            c_id_st := c_id_st + 1;
             select decode(abs(mod(DBMS_RANDOM.RANDOM, 5)), 0, 'Мосвка', 1, 'Санкт-Петербург', 2, 'Воронеж', 3, 'Мурманск', 4, 'Волгоград') into c_city from dual;
             select '8-'||decode(abs(mod(DBMS_RANDOM.RANDOM, 3)), 0, '903', 1, '909', '916')||'-'||to_char(mod(abs(DBMS_RANDOM.RANDOM), 8000000)+1000000) into c_phone from dual;
                 if mod(mod(c_id_st, 0), 10) = 0 THEN
@@ -185,13 +186,12 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         cc                   VARCHAR2(25);
         br                   VARCHAR2(25);
         prc                  NUMBER;
-        procedure_name       VARCHAR2(1000) := 'FILL_FCT_EVENTS';
+        procedure_name       VARCHAR2(100) := 'FILL_FCT_EVENTS';
     begin  
-        rdn := dbms_random.value(17, 34); --количество транзакций в сек
+        rdn := dbms_random.value(3300, 5100); --количество транзакций в сек (старое - (5100, 10200))
         delta := 5 * 60 / rdn; --среднее время в сек между транзакциями
         select SYSDATE into temp from dual; --инициализация текущего времени;
-        for i in 1..rdn
-        loop
+        for i in 1..rdn loop
             select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual;
             select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
             select count(*) + 1 into ev_id from fct_EVENTS;
