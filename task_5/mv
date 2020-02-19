@@ -1,0 +1,187 @@
+
+
+--Cоздаём журнал материализованного представления для таблицы fct_events. Это необходимо для испольхования fast метода обновления материализованных представлений.  
+
+CREATE MATERIALIZED VIEW LOG ON fct_events WITH ROWID, SEQUENCE (event_time, price, category_code, event_type, customer_id, product_id), PRIMARY KEY INCLUDING NEW VALUES;
+
+--Создаём материализованные представления с методом обновления fast (в результат вносятся только изменения, вызванные изменениям в базовых таблицах) on commit. 
+
+
+--Сумма по дням
+
+CREATE MATERIALIZED VIEW DaySumFast
+   BUILD IMMEDIATE
+   REFRESH FAST ON COMMIT
+   AS
+   
+   
+SELECT
+    to_char(event_time, 'yyyy-mm-dd') day,
+    SUM( price )
+FROM
+    fct_events 
+GROUP BY 
+    to_char(event_time, 'yyyy-mm-dd')  
+ORDER BY 
+    to_char(event_time, 'yyyy-mm-dd')  
+
+select * from DaySumFast
+
+
+--Сумма по неделям
+
+CREATE MATERIALIZED VIEW WeekSum
+   BUILD IMMEDIATE
+   REFRESH fast ON COMMIT AS 
+
+SELECT
+    to_char(event_time, 'yyyy') year, to_char(event_time, 'IW')  week,
+    SUM( price )
+FROM
+    fct_events 
+GROUP BY 
+    to_char(event_time, 'yyyy'), to_char(event_time, 'IW') 	
+ORDER BY 
+    to_char(event_time, 'yyyy'), to_char(event_time, 'IW')   
+    
+select * from    WeekSum
+    
+    
+--Сумма по месяцам
+
+CREATE MATERIALIZED VIEW MonthSum
+   BUILD IMMEDIATE
+   REFRESH fast ON COMMIT AS 
+
+SELECT
+    to_char(event_time, 'yyyy-mm') month,
+    SUM( price )
+FROM
+    fct_events 
+GROUP BY 
+    to_char(event_time, 'yyyy-mm')  
+ORDER BY 
+    to_char(event_time, 'yyyy-mm') 
+
+
+select * from MonthSum
+
+
+--Сумма по годам
+
+CREATE MATERIALIZED VIEW YearSum
+   BUILD IMMEDIATE
+   REFRESH fast ON COMMIT AS 
+
+SELECT
+    to_char(event_time, 'yyyy') year,
+    SUM( price )
+FROM
+    fct_events 
+GROUP BY 
+    to_char(event_time, 'yyyy')  
+ORDER BY 
+    to_char(event_time, 'yyyy')
+	
+
+select * from YearSum
+
+
+--Сумма по кварталам
+
+CREATE MATERIALIZED VIEW QSum
+   BUILD IMMEDIATE
+   REFRESH fast ON COMMIT AS 
+
+SELECT
+    to_char(event_time, 'yyyy-Q') year,
+    SUM( price )
+FROM
+    fct_events 
+GROUP BY 
+    to_char(event_time, 'yyyy-Q')  
+ORDER BY 
+    to_char(event_time, 'yyyy-Q')  
+	
+
+select * from QSum
+
+
+--Число проданных товаров в зависимости от категории и сумма
+
+CREATE MATERIALIZED VIEW category_view 
+   BUILD IMMEDIATE
+   REFRESH fast ON COMMIT AS 
+
+SELECT  CATEGORY_CODE , COUNT(*) AS PRODUCTS_SOLD, sum(price) as sum
+FROM     fct_events
+Where event_type = 'purchase'
+GROUP BY CATEGORY_CODE
+ORDER BY COUNT(CATEGORY_CODE) desc	
+
+select * from category_view 
+
+
+
+
+
+--Топ-5 самых наиболее и наименее популярных товаров
+
+--Создаем mv
+CREATE MATERIALIZED VIEW getfive 
+   BUILD IMMEDIATE
+   REFRESH fast ON COMMIT AS 
+   
+   
+SELECT  product_id , COUNT(product_id) AS PRODUCTS_SOLD
+FROM     FCT_EVENTS
+Where event_type = 'purchase'
+GROUP BY product_id
+ORDER BY COUNT(product_id) 
+
+
+--Выводим 5 самых непопулярных товаров
+SELECT A.product_id, A.products_sold, B.name,B.brand, B.price FROM
+ getfive A 
+join dim_products B on A.product_id = B.product_id
+order by products_sold
+FETCH FIRST 5 ROWS ONLY
+
+--Выводим 5 самых популярных товаров
+SELECT A.product_id, A.products_sold, B.name,B.brand, B.price FROM
+ getfive A 
+join dim_products B on A.product_id = B.product_id
+order by products_sold desc
+FETCH FIRST 5 ROWS ONLY;
+
+
+
+
+
+-- Получаем товары, которые чаще всего удаляли из корзины 
+
+
+--Создаем mv
+CREATE MATERIALIZED VIEW removedoften 
+   BUILD IMMEDIATE
+   REFRESH fast ON COMMIT AS 
+(SELECT product_id,  count(event_type) counter
+FROM     FCT_EVENTS
+Where event_type = 'remove'
+GROUP BY product_id)
+
+
+--Выводим
+SELECT A.product_id, counter, B.name,B.brand, B.price FROM
+ removedoften A 
+join dim_products B on A.product_id = B.product_id
+order by counter desc
+
+
+
+
+
+
+
+
+
