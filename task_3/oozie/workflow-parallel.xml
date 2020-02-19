@@ -13,8 +13,8 @@
             <master>${master}</master>
             <mode>${mode}</mode>
             <name>${child_app}</name>
-            <class>Producer_DIM_CUSTOMERS</class>
-            <jar>${PythonPath}/Producer_DIM_CUSTOMERS.py</jar>
+            <class>Consumer_dim_customers</class>
+            <jar>${PythonPath}/Consumer_dim_customers.py</jar>
              <spark-opts>
              </spark-opts>
         </spark>
@@ -28,8 +28,8 @@
             <master>${master}</master>
             <mode>${mode}</mode>
             <name>${child_app}</name>
-            <class>Producer_DIM_PRODUCTS</class>
-            <jar>${PythonPath}/Producer_DIM_PRODUCTS.py</jar>
+            <class>Consumer_dim_products</class>
+            <jar>${PythonPath}/Consumer_dim_products.py</jar>
              <spark-opts>
              </spark-opts>
         </spark>
@@ -43,8 +43,8 @@
             <master>${master}</master>
             <mode>${mode}</mode>
             <name>${child_app}</name>
-            <class>Producer_DIM_SUPPLIERS</class>
-            <jar>${PythonPath}/Producer_DIM_SUPPLIERS.py</jar>
+            <class>Consumer_dim_suppliers</class>
+            <jar>${PythonPath}/Consumer_dim_suppliers.py</jar>
              <spark-opts>
              </spark-opts>
         </spark>
@@ -58,8 +58,8 @@
             <master>${master}</master>
             <mode>${mode}</mode>
             <name>${child_app}</name>
-            <class>Producer_FCT_EVENTS</class>
-            <jar>${PythonPath}/Producer_FCT_EVENTS.py</jar>
+            <class>Consumer_fct_events</class>
+            <jar>${PythonPath}/Consumer_fct_events.py</jar>
              <spark-opts>
              </spark-opts>
         </spark>
