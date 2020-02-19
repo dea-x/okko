@@ -5,6 +5,7 @@ import json
 import decimal
 import datetime
 
+
 def serializer():
     return str.encode
 
@@ -12,17 +13,18 @@ def serializer():
 def build_JSON(x):
     return json.dumps(x)
 
-#
-ARR_TOPIC = ['dim_customers', 'dim_products', 'dim_suppliers']
-#
+
+# Array of topics
+ARR_TOPIC = ['fct_events', 'dim_customers', 'dim_products', 'dim_suppliers']
+# Parameters of database source
 DATABASE_SOURCE = {'url': 'jdbc:oracle:thin:@192.168.88.252:1521:oradb', 'user': 'test_user', 'password': 'test_user'}
-#
+# Parameters of database destination
 DATABASE_DESTINATION = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl', 'user': 'test_user',
                         'password': 'test_user'}
-#
+# Dictionary of incremental fields tables
 DICT_INCREMENTAL_FIELD = {'fct_events': 'event_id', 'dim_customers': 'last_update_date',
                           'dim_products': 'last_update_date', 'dim_suppliers': 'last_update_date'}
-#
+# Dictionary of schemes tables
 DICT_FIELDS = {
     'fct_events': {'event_time': None, 'event_type': None, 'event_id': None, 'product_id': None, 'category_id': None,
                    'category_code': None, 'brand': None, 'price': None, 'customer_id': None},
@@ -42,8 +44,11 @@ def sending_to_Kafka(dfResult, topic):
 
     for i in range(len(dfResult)):
         try:
+            # Fields of table
             for field in DICT_FIELDS[topic].keys():
+                # Selecting one of the table fields
                 tmp = dfResult[i][field.upper()]
+                # Checking the type of this field
                 if isinstance(tmp, decimal.Decimal):
                     DICT_FIELDS[topic][field] = int(tmp)
                 elif isinstance(tmp, datetime.datetime):
@@ -85,14 +90,11 @@ if __name__ == '__main__':
 
         incr_field = DICT_INCREMENTAL_FIELD[topic]
 
+        # Finding max incremental value
         max_value = df1.agg({incr_field: 'max'}).collect()[0][0]
-        print(max_value)
-        print(type(max_value))
+        # Checking for the maximum value
         if max_value is None:
-            if isinstance(max_value, int):
-                max_value = 0
-            else:
-                pass
-        dfResult = df0.where(sf.col(incr_field) > max_value).collect()
+            dfResult = df0.collect()
+        else:
+            dfResult = df0.where(sf.col(incr_field) > max_value).collect()
         sending_to_Kafka(dfResult, topic)
-
