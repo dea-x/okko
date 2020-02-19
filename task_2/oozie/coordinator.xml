@@ -1,5 +1,5 @@
 <coordinator-app name="${coordinator_name}" frequency="${step}" start="${startTime}" end="${endTime}"
-                 timezone="${timezone}" xmlns="uri:oozie:coordinator:0.2">
+                 timezone="${timezone}" xmlns="uri:oozie:coordinator:0.4">
     <action>
         <workflow>
             <app-path>${workflowPath}/workflow.xml</app-path>
