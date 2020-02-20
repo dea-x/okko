@@ -92,32 +92,37 @@ declare
     prod_id     number;
     cat_id      number;
     cust_id     number;
-    ev_type     varchar2(20);
-    ev_id       number;
     temp        DATE;  
     delta       number;
     cc          VARCHAR2(25);
     br          VARCHAR2(30);
     prc         NUMBER;
+	l_col_p     number;
+    l_col_c     number;
   
 begin  
-    rdn :=dbms_random.value(17,34); --количество транзакций в сек
-    delta := 5*60/rdn; --среднее время в сек между транзакциями
     select SYSDATE into temp from dual; --инициализация текущего времени;
+    select max(product_id) into l_col_p from dim_products; --число строк в таблице товаров
+	select max(customer_id) into l_col_c from dim_customers;--число строк в таблице клиентов    
+    rdn :=dbms_random.value(5100,10200); --случайное количество транзакций за 5 мин
+    delta := 5*60/rdn; --среднее время в сек между транзакциями     
     for i in 1..rdn
     loop
-        select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual;
-        select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
-        select count(*)+1 into ev_id from fct_EVENTS;
-        select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
-                                                     8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий                                        
-        select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация времени          
-        select category_code into cc from dim_products dim_p where dim_p.product_id = prod_id; --category code из dim_products
-        select category_id into cat_id from dim_products dim_p where dim_p.product_id = prod_id;
-        select brand into br from dim_products dim_p where dim_p.product_id = prod_id;--brand из dim_products
-        select price into prc from dim_products dim_p where dim_p.product_id = prod_id;--price из dim_products
-        insert into fct_events (event_time, event_id, event_type, product_id, category_id, customer_id, category_code, brand, price) values
-                               (temp, ev_id, ev_type, prod_id, cat_id, cust_id, cc, br, prc);          
+        select (trunc(dbms_random.value(1, l_col_p))) into prod_id from dual; --trunc вместо round для оптимизации запроса
+        select (trunc(dbms_random.value(1, l_col_c))) into cust_id from dual;		
+		insert into fct_events (event_time, event_id, event_type, product_id, category_id, customer_id, category_code, brand, price) values
+                               (temp,
+							    fct_s.NEXTVAL,
+                                (select decode(trunc(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
+                                                     8, 'remove', 9, 'purchase') from dual),--вероятность событий
+								prod_id,
+								(select category_id from dim_products dim_p where dim_p.product_id = prod_id),
+								cust_id,
+								(select category_code from dim_products dim_p where dim_p.product_id = prod_id), --category code из dim_products
+								(select brand from dim_products dim_p where dim_p.product_id = prod_id),--brand из dim_products
+								(select price from dim_products dim_p where dim_p.product_id = prod_id)--price из dim_products
+								);		
+		temp := temp + numToDSInterval(delta, 'second');  --инкрементация текущего времени;	       
     end loop;      
     commit;
 end;
