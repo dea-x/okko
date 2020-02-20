@@ -1,5 +1,14 @@
---генерируемая короткая таблица событий
-create table fct_short (
+-- Удаление таблицы, если она уже есть
+
+BEGIN
+    EXECUTE IMMEDIATE 'drop table fct_short';
+EXCEPTION 
+    WHEN others THEN
+        NULL;
+END;
+
+
+CREATE TABLE fct_short (
     event_time   DATE, 
     event_type   VARCHAR2(20), 
     event_id     NUMBER, 
@@ -7,7 +16,7 @@ create table fct_short (
     customer_id  NUMBER
 );
 
--- заполнение историей короткой таблицы фактов
+
 declare
     start_date  number;
     end_date    number;   
@@ -18,29 +27,36 @@ declare
     ev_id       number;
     temp        DATE;  
     delta       number;
-  
+    l_col_p     number;
+    l_col_c     number;
+    
 begin
-    start_date := to_number(to_char(to_date('2020-02-10', 'yyyy-MM-dd'), 'j')); --начало отсчета 
+    start_date := to_number(to_char(to_date('2019-03-01', 'yyyy-MM-dd'), 'j')); --начало отсчета 
     end_date := to_number(to_char(SYSDATE, 'j')); --конечная дата
+    select count(*) 
+      into l_col_c
+      from dim_customers; --id клиента
+    select count(*) 
+      into l_col_p
+      from dim_products; --id товара
     
     for cur_r in start_date..end_date 
     loop
-        rdn :=dbms_random.value(1000,5000); --количество транзакций в течение одного дня
+        rdn :=dbms_random.value(1000, 5000); --количество транзакций в течение одного дня
         delta := 24*60*60/rdn; --среднее время между транзакциями
         select (to_date(cur_r, 'j')) into temp from dual; --инициализация текущего дня
         for i in 1..rdn
         loop
-            select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual; --id товара
-            select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual; --id клиента
-            select count(*)+1 into ev_id from fct_short; --id события 
-            select decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
-                                                         8, 'remove', 9, 'purchase') 
-														 into ev_type from dual; --вероятность событий
-            select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация текущей даты
-    
+            temp := temp + numToDSInterval(delta, 'second');  --инкрементация текущей даты  
             insert into fct_short (event_time, event_id, event_type, product_id, customer_id) values
-            (temp, ev_id, ev_type, prod_id, cust_id);
-        end loop;           
+                (temp, 
+                fct_s.NEXTVAL,  --id события 
+                decode(round(dbms_random.value(1,9)), 1, 'view', 2, 'view', 3, 'view', --вероятность событий
+                                                4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 8, 'remove', 9, 'purchase'), 
+                round(dbms_random.value(1, l_col_p)), 
+                round(dbms_random.value(1, l_col_c)));
+        end loop;
+        commit;
     end loop;
     commit;
 end;
