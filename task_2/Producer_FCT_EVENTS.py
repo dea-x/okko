@@ -1,8 +1,9 @@
+import time
+start_time_global = time.time()
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
 from kafka import KafkaProducer
 import json
-import time
 
 
 def serializer():
@@ -21,21 +22,20 @@ def producer_to_Kafka(dfResult):
     producer = KafkaProducer(bootstrap_servers=['cdh631.itfbgroup.local:9092'],
                              value_serializer=serializer())
 
-    for i in range(len(dfResult)):
+    for row in dfResult:
         try:
-            event_time = str(dfResult[i]['EVENT_TIME'])
-            event_type = dfResult[i]['EVENT_TYPE']
-            event_id = int(dfResult[i]['EVENT_ID'])
-            product_id = int(dfResult[i]['PRODUCT_ID'])
-            category_id = int(dfResult[i]['CATEGORY_ID'])
-            category_code = dfResult[i]['CATEGORY_CODE']
-            brand = dfResult[i]['BRAND']
-            price = int(dfResult[i]['PRICE'])
-            customer_id = int(dfResult[i]['CUSTOMER_ID'])
+            event_time = str(row['EVENT_TIME'])
+            event_type = row['EVENT_TYPE']
+            event_id = int(row['EVENT_ID'])
+            product_id = int(row['PRODUCT_ID'])
+            category_id = int(row['CATEGORY_ID'])
+            category_code = row['CATEGORY_CODE']
+            brand = row['BRAND']
+            price = int(row['PRICE'])
+            customer_id = int(row['CUSTOMER_ID'])
 
             values = build_JSON(event_time, event_type, event_id, product_id, category_id, category_code, brand, price,
                                 customer_id)
-            # print(values)
             future = producer.send(TOPIC, key=str('fct_events'), value=values)
 
         except Exception as e:
@@ -45,9 +45,10 @@ def producer_to_Kafka(dfResult):
 
 
 if __name__ == '__main__':
+    start_main_time = time.time()
     TOPIC = 'fct_events'
-
     start_time = time.time()
+
     # Creating a dataframe for the source table
     df0 = spark.read \
         .format("jdbc") \
@@ -56,9 +57,12 @@ if __name__ == '__main__':
         .option("dbtable", "fct_events") \
         .option("user", "test_user") \
         .option("password", "test_user") \
+        .option("batchsize", '10000') \
         .load()
 
     print("---first connect %s seconds ---" % (time.time() - start_time))
+    start_time = time.time()
+
     # Creating a dataframe for the recipient table
     df1 = spark.read \
         .format("jdbc") \
@@ -70,9 +74,23 @@ if __name__ == '__main__':
         .load()
 
     print("---second connect %s seconds ---" % (time.time() - start_time))
+    start_time = time.time()
 
-    maxID = df1.agg({'event_id': 'max'}).collect()[0][0]
+    # maxID = df1.agg({'event_id': 'max'}).collect()[0][0]
+    maxID = next(df1.agg({'event_id': 'max'}).toLocalIterator())[0]
+    
+    print("---maxID %s seconds ---" % (time.time() - start_time))
+    start_time = time.time()
+
     if maxID == None:
         maxID = 0
-    dfResult = df0.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000)).collect()
+    dfResult = df0.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000)).toLocalIterator()
+    # dfResult = df0.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000)).collect()
+
+    print("---dfResult %s seconds ---" % (time.time() - start_time))
+    start_time = time.time()
+
     producer_to_Kafka(dfResult)
+    print("---Producer %s seconds ---" % (time.time() - start_time))
+    print("---Itog %s seconds ---" % (time.time() - start_main_time))
+    print("---global %s seconds ---" % (time.time() - start_time_global))
