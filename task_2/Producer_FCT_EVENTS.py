@@ -2,6 +2,7 @@ from pyspark.shell import spark
 import pyspark.sql.functions as sf
 from kafka import KafkaProducer
 import json
+import time
 
 
 def serializer():
@@ -34,7 +35,7 @@ def producer_to_Kafka(dfResult):
 
             values = build_JSON(event_time, event_type, event_id, product_id, category_id, category_code, brand, price,
                                 customer_id)
-            print(values)
+            # print(values)
             future = producer.send(TOPIC, key=str('fct_events'), value=values)
 
         except Exception as e:
@@ -46,6 +47,7 @@ def producer_to_Kafka(dfResult):
 if __name__ == '__main__':
     TOPIC = 'fct_events'
 
+    start_time = time.time()
     # Creating a dataframe for the source table
     df0 = spark.read \
         .format("jdbc") \
@@ -56,6 +58,7 @@ if __name__ == '__main__':
         .option("password", "test_user") \
         .load()
 
+    print("---first connect %s seconds ---" % (time.time() - start_time))
     # Creating a dataframe for the recipient table
     df1 = spark.read \
         .format("jdbc") \
@@ -66,8 +69,10 @@ if __name__ == '__main__':
         .option("password", "test_user") \
         .load()
 
+    print("---second connect %s seconds ---" % (time.time() - start_time))
+
     maxID = df1.agg({'event_id': 'max'}).collect()[0][0]
     if maxID == None:
         maxID = 0
-    dfResult = df0.where(sf.col('event_id') > maxID).collect()
+    dfResult = df0.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000)).collect()
     producer_to_Kafka(dfResult)
