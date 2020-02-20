@@ -7,6 +7,11 @@ EXCEPTION
         NULL;
 END;
 
+CREATE SEQUENCE fct_s
+    MINVALUE 1
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE;
 
 CREATE TABLE fct_short (
     event_time   DATE, 
