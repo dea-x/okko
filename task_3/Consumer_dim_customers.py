@@ -3,7 +3,6 @@ from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
 import json
 import time
-import sys
 
 START = 0
 PARTITION = 0
@@ -15,7 +14,8 @@ HOST_IP = "192.168.88.95"
 PORT = "1521"
 SID = "orcl"
 
-TARGET_DB_TABLE_NAME = "DIM_CUSTOMERS" 
+TARGET_DB_TABLE_NAME = "DIM_CUSTOMERS"
+OFFSET_TABLE_NAME = "OFFSET_DIM_CUSTOMERS" 
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
@@ -79,22 +79,37 @@ def write_offset_ranges(rdd):
     :param untilOffset: Exclusive ending offset.
     """
     for o in offsetRanges:
-        f = open(pathOffsetFile, 'w')
-        f.write(str(o.untilOffset))
-        f.close()
+        currentOffset = int(o.untilOffset)
+        df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
+        df1.write \
+            .format("jdbc") \
+            .mode("append") \
+            .option("driver", 'oracle.jdbc.OracleDriver') \
+            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+            .option("dbtable", OFFSET_TABLE_NAME) \
+            .option("user", TARGET_DB_USER_NAME) \
+            .option("password", TARGET_DB_USER_PASSWORD) \
+            .save()
 
-def main(argv):
-    global ssc
+if __name__ == "__main__":
     ssc = StreamingContext(sc, 5)
     
-    global pathOffsetFile
-    pathOffsetFile = str(argv)
+    df1 = spark.read \
+        .format("jdbc") \
+        .option("driver", 'oracle.jdbc.OracleDriver') \
+        .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+        .option("dbtable", OFFSET_TABLE_NAME) \
+        .option("user", TARGET_DB_USER_NAME) \
+        .option("password", TARGET_DB_USER_PASSWORD) \
+        .load()
+        
+    maxOffset = df1.agg({'OFFSET': 'max'}).collect()[0][0]
+    if maxOffset == None:
+        maxOffset = 0
+    
     topicPartion = TopicAndPartition(TOPIC, PARTITION)
-    f = open(pathOffsetFile, 'r')
-    start = int(f.read())
-    f.close()
 
-    fromOffset = {topicPartion: start}
+    fromOffset = {topicPartion: maxOffset}
     kafkaParams = {"metadata.broker.list": BROKER_LIST}
     kafkaParams["enable.auto.commit"] = "false"
 
@@ -108,7 +123,3 @@ def main(argv):
 
     ssc.start()
     ssc.awaitTermination()
-
-
-if __name__ == "__main__":
-    main(sys.argv[1])
