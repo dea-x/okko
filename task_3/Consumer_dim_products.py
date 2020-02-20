@@ -3,7 +3,6 @@ from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
 import json
 import time
-import sys
 
 START = 0
 PARTITION = 0
