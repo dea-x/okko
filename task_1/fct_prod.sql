@@ -34,10 +34,6 @@ declare
     start_date  number;
     end_date    number;   
     rdn         number;
-    prod_id     number;
-    cust_id     number;
-    ev_type     varchar2(20);
-    ev_id       number;
     temp        DATE;  
     delta       number;
     l_col_p     number;
@@ -74,7 +70,6 @@ begin
         end loop;
         commit;
     end loop;
-    commit;
 end;
 
 --инкрементная загрузка данных
