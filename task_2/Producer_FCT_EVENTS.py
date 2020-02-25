@@ -1,5 +1,3 @@
-import time
-start_time_global = time.time()
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
 from kafka import KafkaProducer
@@ -10,13 +8,6 @@ def serializer():
     return str.encode
 
 
-# Serialization in JSON
-def build_JSON(event_time, event_type, event_id, product_id, category_id, category_code, brand, price, customer_id):
-    data = dict(event_time=event_time, event_type=event_type, event_id=event_id, product_id=product_id,
-                category_id=category_id, category_code=category_code, brand=brand, price=price, customer_id=customer_id)
-    return json.dumps(data)
-
-
 # The implementation of the producer
 def producer_to_Kafka(dfResult):
     producer = KafkaProducer(bootstrap_servers=['cdh631.itfbgroup.local:9092'],
@@ -24,73 +15,59 @@ def producer_to_Kafka(dfResult):
 
     for row in dfResult:
         try:
-            event_time = str(row['EVENT_TIME'])
-            event_type = row['EVENT_TYPE']
-            event_id = int(row['EVENT_ID'])
-            product_id = int(row['PRODUCT_ID'])
-            category_id = int(row['CATEGORY_ID'])
-            category_code = row['CATEGORY_CODE']
-            brand = row['BRAND']
-            price = int(row['PRICE'])
-            customer_id = int(row['CUSTOMER_ID'])
-
-            values = build_JSON(event_time, event_type, event_id, product_id, category_id, category_code, brand, price,
-                                customer_id)
-            future = producer.send(TOPIC, key=str('fct_events'), value=values)
-
+            producer.send('fct_events', json.dumps(row.asDict(), default=str))
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
-
     producer.flush()
 
 
+def connection_to_bases(database_source, database_destination):
+    # creating a dataframe for the source table
+    dfSource = spark.read \
+        .format('jdbc') \
+        .option('driver', 'oracle.jdbc.oracledriver') \
+        .option('url', database_source['url']) \
+        .option('dbtable', database_source['table']) \
+        .option('user', database_source['user']) \
+        .option('password', database_source['password']) \
+        .load()
+
+    # creating a dataframe for the target table
+    dfTarget = spark.read \
+        .format('jdbc') \
+        .option('driver', 'oracle.jdbc.oracledriver') \
+        .option('url', database_destination['url']) \
+        .option('dbtable', database_source['table'].upper()) \
+        .option('user', database_destination['user']) \
+        .option('password', database_destination['password']) \
+        .load()
+
+    return (dfSource, dfTarget)
+
+
 if __name__ == '__main__':
-    start_main_time = time.time()
-    TOPIC = 'fct_events'
-    start_time = time.time()
+    # Topic name
+    TOPIC = 'vshagFirstTopic'
+    # Parameters of database source
+    DATABASE_SOURCE = {'url': 'jdbc:oracle:thin:@192.168.88.252:1521:oradb', 'user': 'test_user',
+                       'password': 'test_user', 'table': 'fct_events'}
+    # Parameters of database destination
+    DATABASE_DESTINATION = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl', 'user': 'test_user',
+                            'password': 'test_user', 'table': 'fct_events'}
 
-    # Creating a dataframe for the source table
-    df0 = spark.read \
-        .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:oradb") \
-        .option("dbtable", "fct_events") \
-        .option("user", "test_user") \
-        .option("password", "test_user") \
-        .option("batchsize", '10000') \
-        .load()
+    try:
+        # Connection to the Bases
+        dfSource, dfTarget = connection_to_bases(DATABASE_SOURCE, DATABASE_DESTINATION)
+    except Exception as e:
+        print('Incorrect connection')
 
-    print("---first connect %s seconds ---" % (time.time() - start_time))
-    start_time = time.time()
-
-    # Creating a dataframe for the recipient table
-    df1 = spark.read \
-        .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.95:1521:orcl") \
-        .option("dbtable", "FCT_EVENTS") \
-        .option("user", "test_user") \
-        .option("password", "test_user") \
-        .load()
-
-    print("---second connect %s seconds ---" % (time.time() - start_time))
-    start_time = time.time()
-
-    # maxID = df1.agg({'event_id': 'max'}).collect()[0][0]
-    maxID = next(df1.agg({'event_id': 'max'}).toLocalIterator())[0]
-    
-    print("---maxID %s seconds ---" % (time.time() - start_time))
-    start_time = time.time()
-
+    # Finding the max increment value
+    maxID = next(dfTarget.agg({'event_id': 'max'}).toLocalIterator())[0]
+    # Creation of final dataframe
     if maxID == None:
-        maxID = 0
-    dfResult = df0.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000)).toLocalIterator()
-    # dfResult = df0.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000)).collect()
-
-    print("---dfResult %s seconds ---" % (time.time() - start_time))
-    start_time = time.time()
-
+        dfResult = dfSource.toLocalIterator()
+    else:
+        dfResult = dfSource.where(
+            (sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 10)).toLocalIterator()
+    # Sending dataframe to Kafka
     producer_to_Kafka(dfResult)
-    print("---Producer %s seconds ---" % (time.time() - start_time))
-    print("---Itog %s seconds ---" % (time.time() - start_main_time))
-    print("---global %s seconds ---" % (time.time() - start_time_global))
