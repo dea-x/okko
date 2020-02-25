@@ -13,6 +13,7 @@ task_1: Реализация данных исходной (source) базы Ora
 
 
 **--Последовательность для id--**
+
 CREATE SEQUENCE fct_s_prod
     MINVALUE 1
     START WITH 1
