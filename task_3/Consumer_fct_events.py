@@ -4,7 +4,6 @@ from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
 import json
 import time
 
-START = 0
 PARTITION = 0
 TOPIC = "fct_events"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
@@ -23,8 +22,9 @@ TARGET_DB_USER_PASSWORD = "test_user"
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
     data = json.loads(line)
-    return data['event_time'], data['event_type'], data['event_id'], data['product_id'], data['category_id'], data[
-        'category_code'], data['brand'], data['price'], data['customer_id']
+    return data['EVENT_TIME'], data['EVENT_TYPE'], data['EVENT_ID'], data['PRODUCT_ID'], data['CATEGORY_ID'], data[
+        'CATEGORY_CODE'], data['BRAND'], data['PRICE'], data['CUSTOMER_ID']
+
 
 
 def deserializer():
@@ -33,10 +33,12 @@ def deserializer():
 
 
 def save_data(rdd):
+    global flag
+    flag = False
     """
     Parsing JSON value in each RDDs
-    Creating Spark SQL DataFrame from RDD
-    Writing DataFrame to HDFS and Oracle DB
+    Creating Spark SQL dataFrame from RDD
+    Writing dataFrame to HDFS and Oracle DB
     """
     if not rdd.isEmpty():
         rdd = rdd.map(lambda m: parse(m[1]))
@@ -44,24 +46,28 @@ def save_data(rdd):
         df.createOrReplaceTempView("t")
         result = spark.sql(
             "select to_timestamp(_1) as event_time,_2 as event_type,_3 as event_id,_4 as product_id,_5 as category_id,_6 as category_code,_7 as brand,_8 as price,_9 as customer_id from t")
-
-        # Writing to HDFS
-        result.write \
-            .format("csv") \
-            .mode("append") \
-            .option("header", "true") \
-            .save(HDFS_OUTPUT_PATH)
-
-        # Writing to Oracle DB
-        result.write \
-            .format("jdbc") \
-            .mode("append") \
-            .option("driver", 'oracle.jdbc.OracleDriver') \
-            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
-            .option("dbtable", TARGET_DB_TABLE_NAME) \
-            .option("user", TARGET_DB_USER_NAME) \
-            .option("password", TARGET_DB_USER_PASSWORD) \
-            .save()
+        
+        try:
+            # Writing to HDFS
+            result.write \
+                .format("csv") \
+                .mode("append") \
+                .option("header", "true") \
+                .save(HDFS_OUTPUT_PATH)
+        
+            # Writing to Oracle DB
+            result.write \
+                .format("jdbc") \
+                .mode("append") \
+                .option("driver", 'oracle.jdbc.OracleDriver') \
+                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("dbtable", TARGET_DB_TABLE_NAME) \
+                .option("user", TARGET_DB_USER_NAME) \
+                .option("password", TARGET_DB_USER_PASSWORD) \
+                .save()
+        except Exception:
+            print("Exception!\n")
+            flag = True
     else:
         ssc.stop()
     return rdd
@@ -82,18 +88,19 @@ def write_offset_ranges(rdd):
     Writing value of untilOffset to *.txt file
     :param untilOffset: Exclusive ending offset.
     """
-    for o in offsetRanges:
-        currentOffset = int(o.untilOffset)
-        df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
-        df1.write \
-            .format("jdbc") \
-            .mode("append") \
-            .option("driver", 'oracle.jdbc.OracleDriver') \
-            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
-            .option("dbtable", OFFSET_TABLE_NAME) \
-            .option("user", TARGET_DB_USER_NAME) \
-            .option("password", TARGET_DB_USER_PASSWORD) \
-            .save()
+    if flag != True:
+        for o in offsetRanges:
+            currentOffset = int(o.untilOffset)
+            df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
+            df1.write \
+                .format("jdbc") \
+                .mode("overwrite") \
+                .option("driver", 'oracle.jdbc.OracleDriver') \
+                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("dbtable", OFFSET_TABLE_NAME) \
+                .option("user", TARGET_DB_USER_NAME) \
+                .option("password", TARGET_DB_USER_PASSWORD) \
+                .save()
 
 
 if __name__ == "__main__":
@@ -108,7 +115,7 @@ if __name__ == "__main__":
         .option("password", TARGET_DB_USER_PASSWORD) \
         .load()
         
-    maxOffset = df1.agg({'OFFSET': 'max'}).collect()[0][0]
+    maxOffset = df1.agg({'OFFSET': 'max'}).collect()[0][0] 
     if maxOffset == None:
         maxOffset = 0
     
