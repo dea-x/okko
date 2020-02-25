@@ -24,14 +24,14 @@ CREATE SEQUENCE fct_s_prod
 **---Справочник Покупатели---**
 
 CREATE TABLE DIM_CUSTOMERS ( 
-	customer_id NUMBER, 
-	country VARCHAR2(40), 
-	city VARCHAR2(40), 
-	phone VARCHAR2(40), 
-	first_name VARCHAR2(40), 
-	last_name VARCHAR2(40), 
-	mail VARCHAR2(50), 
-	last_update_date DATE
+	customer_id		NUMBER, 
+	country			VARCHAR2(40), 
+	city			VARCHAR2(40), 
+	phone			VARCHAR2(40), 
+	first_name		VARCHAR2(40), 
+	last_name		VARCHAR2(40), 
+	mail			VARCHAR2(50), 
+	last_update_date	DATE,
 	CONSTRAINT customer_pk PRIMARY KEY (customer_id)
 );
 
@@ -39,12 +39,12 @@ CREATE TABLE DIM_CUSTOMERS (
 **---Справочник Поставщики---**
 
 CREATE TABLE DIM_SUPPLIERS ( 
-	suppliers_id NUMBER, 
-	category VARCHAR2(25), 
-	name VARCHAR2(40), 
-	country VARCHAR2(40), 
-	city VARCHAR2(40), 
-	last_update_date DATE
+	suppliers_id		NUMBER, 
+	category		VARCHAR2(25), 
+	name			VARCHAR2(40), 
+	country			VARCHAR2(40), 
+	city			VARCHAR2(40), 
+	last_update_date	DATE,
 	CONSTRAINT suppliers_pk PRIMARY KEY (suppliers_id)
 );
 
@@ -52,14 +52,14 @@ CREATE TABLE DIM_SUPPLIERS (
 **---Справочник Товары---** 
 
 CREATE TABLE DIM_PRODUCTS ( 
-	product_id NUMBER, 
-	category_id NUMBER, 
-	category_code VARCHAR2(25), 
-	brand VARCHAR2(30), 
-	description VARCHAR2(100), 
-	name VARCHAR2(50), 
-	price NUMBER, 
-	last_update_date DATE 
+	product_id		NUMBER, 
+	category_id		NUMBER, 
+	category_code		VARCHAR2(25), 
+	brand			VARCHAR2(30), 
+	description		VARCHAR2(100), 
+	name			VARCHAR2(50), 
+	price			NUMBER, 
+	last_update_date	DATE,
 	CONSTRAINT product_pk PRIMARY KEY (product_id)
 );
 
@@ -67,19 +67,19 @@ CREATE TABLE DIM_PRODUCTS (
 **---Справочник События---** 
 
 CREATE TABLE DIM_EVENT_TYPE (
-    event_type   VARCHAR2(20), 
-    event_id     NUMBER
-	CONSTRAINT event_id_pk PRIMARY KEY (event_id)
+	event_type	VARCHAR2(20), 
+	event_id	NUMBER,
+   	CONSTRAINT event_id_pk PRIMARY KEY (event_id)
 );  
 
 
 **---Таблица Фактов---**
 CREATE TABLE fct_prod (
-	id 			 NUMBER,
-	event_id	 NUMBER,
-    event_time   DATE, 
-    product_id   NUMBER,
-    customer_id  NUMBER
+	id 		NUMBER,
+	event_id	NUMBER,
+    	event_time	DATE, 
+    	product_id	NUMBER,
+    	customer_id	NUMBER,
 	CONSTRAINT id_pk PRIMARY KEY (id)
 );
 
