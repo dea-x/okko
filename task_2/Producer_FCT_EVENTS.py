@@ -4,7 +4,7 @@ from kafka import KafkaProducer
 import json
 
 # Topic name
-TOPIC = 'vshagFirstTopic'
+TOPIC = 'fct_events'
 # Parameters of database source
 DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'user': 'test_user',
