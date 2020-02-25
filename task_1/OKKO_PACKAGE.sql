@@ -3,9 +3,11 @@
    
    Вызов процедур пакета:
    BEGIN
-       okko.FILL_customers (1);  -- добавление в таблицу покупателей 1 записи
-       okko.FILL_products (1);  -- добавление в таблицу продуктов 1 записи
-       okko.FILL_fct_events;  -- добавление записей в таблицу фактов
+       OKKO.FILL_CUSTOMERS(1);  -- добавление в таблицу покупателей 1 записи
+       OKKO.FILL_PRODUCTS(1);  -- добавление в таблицу продуктов 1 записи
+       OKKO.FILL_FCT_PROD;  -- добавление записей в таблицу фактов
+	   OKKO.FILL_FCT_PROD_DISCRETE(1); -- добавление 1 записи в таблицу фактов
+	   
    END;
 */
 
@@ -44,7 +46,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
          -- создание массива для хранения городов
         type arr_type_city is table of VARCHAR2(40)
         index by binary_integer;
-        category             VARCHAR2(25);
+        category_id          NUMBER;
         name                 VARCHAR2(40); 
         country              VARCHAR2(40); 
         city                 VARCHAR2(40);
@@ -62,10 +64,10 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         cities(6) := 'Тула';
         country := 'Россия';
         -- получение всех доступных кодов категорий
-        for rowCategory in (select category_code from category) loop
+        for rowCategory in (select category_id from category) loop
             -- получаем 1, если этот код уже есть в поставщиках, иначе 0
             select case when exists(select * from DIM_SUPPLIERS 
-                                where category = rowCategory.category_code)
+										where category = rowCategory.category_id)
                         then 1 
                         else 0
                     end
@@ -76,7 +78,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
                 city_index := mod(round(DBMS_RANDOM.VALUE * 100), cities.count) + 1;
                 city := cities(city_index);
                 name := 'OOO '||DBMS_RANDOM.STRING('a', 4);
-                insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, rowCategory.category_code, 
+                insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, rowCategory.category_id, 
                                                   name, country, city, sysdate);
             end if;
         end loop;
@@ -168,7 +170,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         procedure_name      VARCHAR2(100) := 'FILL_FCT_PROD';
     BEGIN  
         rdn := dbms_random.value(5100, 10200); --случайное количество транзакций за 5 мин
-		FILL_FCT_PROD_DISCRETE(rdn)
+        FILL_FCT_PROD_DISCRETE(rdn)
     EXCEPTION WHEN others THEN
         log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
     END FILL_FCT_PROD;
