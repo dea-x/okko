@@ -35,31 +35,36 @@ def save_data(rdd):
     Creating Spark SQL DataFrame from RDD
     Writing DataFrame to HDFS and Oracle DB
     """
+    global flag
+    flag = False
     if not rdd.isEmpty():
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
         result = spark.sql("select _1 as suppliers_id,_2 as category,_3 as name,_4 as country,_5 as city,to_timestamp(_6) as last_update_date from t")
-        START = rdd.map(lambda x: x[3])
-        print(START)
+
         
-        # Writing to HDFS
-        result.write \
-            .format("csv") \
-            .mode("append") \
-            .option("header", "true") \
-            .save(HDFS_OUTPUT_PATH)
+        try:
+            # Writing to HDFS
+            result.write \
+                .format("csv") \
+                .mode("append") \
+                .option("header", "true") \
+                .save(HDFS_OUTPUT_PATH)
         
-        # Writing to Oracle DB
-        result.write \
-            .format("jdbc") \
-            .mode("append") \
-            .option("driver", 'oracle.jdbc.OracleDriver') \
-            .option("url","jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
-            .option("dbtable", TARGET_DB_TABLE_NAME) \
-            .option("user", TARGET_DB_USER_NAME) \
-            .option("password", TARGET_DB_USER_PASSWORD) \
-            .save()
+            # Writing to Oracle DB
+            result.write \
+                .format("jdbc") \
+                .mode("append") \
+                .option("driver", 'oracle.jdbc.OracleDriver') \
+                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("dbtable", TARGET_DB_TABLE_NAME) \
+                .option("user", TARGET_DB_USER_NAME) \
+                .option("password", TARGET_DB_USER_PASSWORD) \
+                .save()
+        except Exception:
+            print("Exception!\n")
+            flag = True
     else:
         ssc.stop()
     return rdd
@@ -78,18 +83,19 @@ def write_offset_ranges(rdd):
     Writing value of untilOffset to *.txt file
     :param untilOffset: Exclusive ending offset.
     """
-    for o in offsetRanges:
-        currentOffset = int(o.untilOffset)
-        df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
-        df1.write \
-            .format("jdbc") \
-            .mode("append") \
-            .option("driver", 'oracle.jdbc.OracleDriver') \
-            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
-            .option("dbtable", OFFSET_TABLE_NAME) \
-            .option("user", TARGET_DB_USER_NAME) \
-            .option("password", TARGET_DB_USER_PASSWORD) \
-            .save()
+    if flag != True:
+        for o in offsetRanges:
+            currentOffset = int(o.untilOffset)
+            df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
+            df1.write \
+                .format("jdbc") \
+                .mode("overwrite") \
+                .option("driver", 'oracle.jdbc.OracleDriver') \
+                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("dbtable", OFFSET_TABLE_NAME) \
+                .option("user", TARGET_DB_USER_NAME) \
+                .option("password", TARGET_DB_USER_PASSWORD) \
+                .save()
 
 if __name__ == "__main__":
     ssc = StreamingContext(sc, 5)
