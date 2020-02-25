@@ -45,7 +45,11 @@ def save_data(rdd):
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
         result = spark.sql(
-            "select to_timestamp(_1) as event_time,_2 as event_type,_3 as event_id,_4 as product_id,_5 as category_id,_6 as category_code,_7 as brand,_8 as price,_9 as customer_id from t")
+            '''select event_time, event_type, event_id, product_id, category_id, category_code, brand, price, customer_id
+        from (select row_number() over (partition by _3 order by _1) as RN, to_timestamp(_1) as event_time,_2 as event_type,
+        _3 as event_id,_4 as product_id,_5 as category_id,_6 as category_code,_7 as brand,_8 as price,_9 as customer_id 
+                    from t)
+        where RN = 1''')
         
         try:
             # Writing to HDFS
