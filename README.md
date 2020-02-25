@@ -9,74 +9,78 @@ task_1: Реализация данных исходной (source) базы Ora
 1.Создание БД, создание пользователя, предоставление ему прав
 2. Создание таблиц и определение типов данных
 
-Структура таблиц исходной БД:
+Структура исходной БД:
+
+
+**--Последовательность для id--**
+CREATE SEQUENCE fct_s_prod
+    MINVALUE 1
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE;
 
 
 **---Справочник Покупатели---**
 
 CREATE TABLE DIM_CUSTOMERS ( 
-customer_id NUMBER, 
-country VARCHAR2(40), 
-city VARCHAR2(40), 
-phone VARCHAR2(40), 
-first_name VARCHAR2(40), 
-last_name VARCHAR2(40), 
-mail VARCHAR2(50), 
-last_update_date DATE
+	customer_id NUMBER, 
+	country VARCHAR2(40), 
+	city VARCHAR2(40), 
+	phone VARCHAR2(40), 
+	first_name VARCHAR2(40), 
+	last_name VARCHAR2(40), 
+	mail VARCHAR2(50), 
+	last_update_date DATE
+	CONSTRAINT customer_pk PRIMARY KEY (customer_id)
 );
 
 
 **---Справочник Поставщики---**
 
 CREATE TABLE DIM_SUPPLIERS ( 
-suppliers_id NUMBER, 
-category VARCHAR2(25), 
-name VARCHAR2(40), 
-country VARCHAR2(40), 
-city VARCHAR2(40), 
-last_update_date DATE
+	suppliers_id NUMBER, 
+	category VARCHAR2(25), 
+	name VARCHAR2(40), 
+	country VARCHAR2(40), 
+	city VARCHAR2(40), 
+	last_update_date DATE
+	CONSTRAINT suppliers_pk PRIMARY KEY (suppliers_id)
 );
 
 
 **---Справочник Товары---** 
 
 CREATE TABLE DIM_PRODUCTS ( 
-product_id NUMBER, 
-category_id NUMBER, 
-category_code VARCHAR2(25), 
-brand VARCHAR2(30), 
-description VARCHAR2(100), 
-name VARCHAR2(50), 
-price NUMBER, 
-last_update_date DATE 
+	product_id NUMBER, 
+	category_id NUMBER, 
+	category_code VARCHAR2(25), 
+	brand VARCHAR2(30), 
+	description VARCHAR2(100), 
+	name VARCHAR2(50), 
+	price NUMBER, 
+	last_update_date DATE 
+	CONSTRAINT product_pk PRIMARY KEY (product_id)
 );
 
 
-**---Таблица исторических событий---** *не используется в продюсере и консьюмере*
+**---Справочник События---** 
 
-CREATE TABLE FCT_SHORT (
-event_time DATE, 
-event_type VARCHAR2(20), 
-event_id NUMBER, 
-product_id NUMBER,
-customer_id NUMBER
+CREATE TABLE DIM_EVENT_TYPE (
+    event_type   VARCHAR2(20), 
+    event_id     NUMBER
+	CONSTRAINT event_id_pk PRIMARY KEY (event_id)
+);  
+
+
+**---Таблица Фактов---**
+CREATE TABLE fct_prod (
+	id 			 NUMBER,
+	event_id	 NUMBER,
+    event_time   DATE, 
+    product_id   NUMBER,
+    customer_id  NUMBER
+	CONSTRAINT id_pk PRIMARY KEY (id)
 );
-
-
-**---Таблица событий (таблица фактов)---** 
-
-CREATE TABLE FCT_EVENTS ( 
-event_time DATE, 
-event_type VARCHAR2(20), 
-event_id NUMBER, 
-product_id NUMBER, 
-category_id NUMBER, 
-category_code VARCHAR2(25), 
-brand VARCHAR2(30), 
-price NUMBER, 
-customer_id NUMBER,  
-CONSTRAINT event_pk PRIMARY KEY (event_id) 
-)
 
 3. Наполнение исходных таблиц посредством PL/SQL пакета
 4. Добавить job, для запуска пакета по расписанию, через dbms_job (генерация раз в 5-10 минут)
