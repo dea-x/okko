@@ -67,8 +67,8 @@ CREATE TABLE DIM_PRODUCTS (
 **---Справочник События---** 
 
 CREATE TABLE DIM_EVENT_TYPE (
-	event_type	VARCHAR2(20), 
 	event_id	NUMBER,
+	event_type	VARCHAR2(20), 
    	CONSTRAINT event_id_pk PRIMARY KEY (event_id)
 );  
 
