@@ -3,71 +3,73 @@ import pyspark.sql.functions as sf
 from kafka import KafkaProducer
 import json
 
+# Topic name
+TOPIC = 'vshagFirstTopic'
+# Parameters of database source
+DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
+                   'user': 'test_user',
+                   'password': 'test_user',
+                   'table': 'fct_events'}
+# Parameters of database destination
+DATABASE_DESTINATION = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
+                        'user': 'test_user',
+                        'password': 'test_user',
+                        'table': 'fct_events'}
+
 
 def serializer():
     return str.encode
 
 
 # The implementation of the producer
-def producer_to_Kafka(dfResult):
+def send_to_Kafka(rows):
     producer = KafkaProducer(bootstrap_servers=['cdh631.itfbgroup.local:9092'],
                              value_serializer=serializer())
-
-    for row in dfResult:
+    for row in rows:
         try:
-            producer.send('fct_events', json.dumps(row.asDict(), default=str))
+            producer.send(TOPIC, key=str('fct_events'), value=json.dumps(row.asDict(), default=str))
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
     producer.flush()
 
 
-def connection_to_bases(database_source, database_destination):
+def connection_to_bases():
     # creating a dataframe for the source table
-    dfSource = spark.read \
+    df_source = spark.read \
         .format('jdbc') \
-        .option('driver', 'oracle.jdbc.oracledriver') \
-        .option('url', database_source['url']) \
-        .option('dbtable', database_source['table']) \
-        .option('user', database_source['user']) \
-        .option('password', database_source['password']) \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', DATABASE_SOURCE['url']) \
+        .option('dbtable', DATABASE_SOURCE['table']) \
+        .option('user', DATABASE_SOURCE['user']) \
+        .option('password', DATABASE_SOURCE['password']) \
         .load()
 
     # creating a dataframe for the target table
-    dfTarget = spark.read \
+    df_target = spark.read \
         .format('jdbc') \
-        .option('driver', 'oracle.jdbc.oracledriver') \
-        .option('url', database_destination['url']) \
-        .option('dbtable', database_source['table'].upper()) \
-        .option('user', database_destination['user']) \
-        .option('password', database_destination['password']) \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', DATABASE_DESTINATION['url']) \
+        .option('dbtable', DATABASE_DESTINATION['table'].upper()) \
+        .option('user', DATABASE_DESTINATION['user']) \
+        .option('password', DATABASE_DESTINATION['password']) \
         .load()
+    return df_source, df_target
 
-    return (dfSource, dfTarget)
 
-
-if __name__ == '__main__':
-    # Topic name
-    TOPIC = 'vshagFirstTopic'
-    # Parameters of database source
-    DATABASE_SOURCE = {'url': 'jdbc:oracle:thin:@192.168.88.252:1521:oradb', 'user': 'test_user',
-                       'password': 'test_user', 'table': 'fct_events'}
-    # Parameters of database destination
-    DATABASE_DESTINATION = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl', 'user': 'test_user',
-                            'password': 'test_user', 'table': 'fct_events'}
-
+def main():
     try:
         # Connection to the Bases
-        dfSource, dfTarget = connection_to_bases(DATABASE_SOURCE, DATABASE_DESTINATION)
-    except Exception as e:
-        print('Incorrect connection')
+        df_source, df_target = connection_to_bases()
+        # Finding the max increment value
+        maxID = next(df_target.agg({'event_id': 'max'}).toLocalIterator())[0]
+        maxID = 0 if maxID is None else maxID
+        # Creation of final dataframe
+        dfResult = df_source.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000))
+        # Sending dataframe to Kafka
+        dfResult.foreachPartition(send_to_Kafka)
 
-    # Finding the max increment value
-    maxID = next(dfTarget.agg({'event_id': 'max'}).toLocalIterator())[0]
-    # Creation of final dataframe
-    if maxID == None:
-        dfResult = dfSource.toLocalIterator()
-    else:
-        dfResult = dfSource.where(
-            (sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 10)).toLocalIterator()
-    # Sending dataframe to Kafka
-    producer_to_Kafka(dfResult)
+    except Exception as e:
+        print('--> It seems an Error occurred: {}'.format(e))
+
+
+main()
