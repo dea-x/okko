@@ -65,7 +65,7 @@ def connection_to_bases():
     return df_source, df_target
 
 
-def write_log(level_log: str, program_name: str, procedure_name: str, message: str) -> None:
+def write_log(level_log, program_name, procedure_name, message):
     """ Function for writing log
 
     :param level_log: level of logging, can be one of ["INFO", "WARN", "ERROR"];
@@ -91,9 +91,9 @@ def get_offset():
     """ Function to receive current offset """
     consumer = KafkaConsumer(TOPIC, bootstrap_servers=[SERVER_ADDRESS])
     # get partition
-    part = consumer.partitions_for_topic(TOPIC)
-    part = part.pop()
-    tp = TopicPartition(TOPIC, part)
+    # part = consumer.partitions_for_topic(TOPIC)
+    # part = part.pop()
+    tp = TopicPartition(TOPIC, 0)
     consumer.topics()
     return consumer.position(tp)
 
