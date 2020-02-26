@@ -65,7 +65,7 @@ def save_data(rdd):
             .option("password", TARGET_DB_USER_PASSWORD) \
             .load()
         
-        max_id = df_max_id.agg({'product_id': 'max'}).collect()[0][0]
+        max_id = df_max_id.agg({'customer_id': 'max'}).collect()[0][0]
         if max_id == None:
             max_id = 0 
             
