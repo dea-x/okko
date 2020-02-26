@@ -70,7 +70,7 @@ insert into products (product, des, category_id) values ('Видеокамера
 
 
 --статичная таблица брэндов 
-create table brands (brand VARCHAR2(30))
+create table brands (brand VARCHAR2(30));
 insert into brands (brand) values ('LG');
 insert into brands (brand) values ('Samsung');
 insert into brands (brand) values ('Philips');
