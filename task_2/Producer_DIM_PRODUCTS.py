@@ -31,7 +31,7 @@ def send_to_Kafka(rows):
         try:
             producer.send(TOPIC, key=str('dim_products'), value=json.dumps(row.asDict(), default=str))
         except Exception as e:
-            write_log('ERROR', 'Producer_DIM_PRODUCTS', 'send_to_Kafka', str(e))
+            write_log('ERROR', 'Producer_DIM_PRODUCTS', 'send_to_Kafka', str(e)[:1000])
     producer.flush()
 
 
@@ -86,10 +86,11 @@ def main():
             dfResult = df_source.where(sf.col('last_update_date') > maxID)
         # Sending dataframe to Kafka
         dfResult.foreachPartition(send_to_Kafka)
+        count = dfResult.count()
         # Write to logs
-        write_log('INFO', 'Producer_DIM_PRODUCTS', 'main', str(e))
+        write_log('INFO', 'Producer_DIM_PRODUCTS', 'main', "Successful sending of {0} lines".format(count))
     except Exception as e:
-        write_log('ERROR', 'Producer_DIM_PRODUCTS', 'main', str(e))
+        write_log('ERROR', 'Producer_DIM_PRODUCTS', 'main', str(e)[:1000])
 
 
 main()
