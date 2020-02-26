@@ -3,11 +3,11 @@
    
    Вызов процедур пакета:
    BEGIN
-       OKKO.FILL_CUSTOMERS(1);  -- добавление в таблицу покупателей 1 записи
-       OKKO.FILL_PRODUCTS(1);  -- добавление в таблицу продуктов 1 записи
-       OKKO.FILL_FCT_PROD;  -- добавление записей в таблицу фактов
-	   OKKO.FILL_FCT_PROD_DISCRETE(1); -- добавление 1 записи в таблицу фактов
-	   
+       OKKO.FILL_CUSTOMERS(1);         -- добавление в таблицу покупателей 1 записи
+       OKKO.FILL_PRODUCTS(1);          -- добавление в таблицу продуктов 1 записи
+       OKKO.FILL_FCT_PROD;             -- добавление записей в таблицу фактов
+       OKKO.FILL_FCT_PROD_DISCRETE(1); -- добавление 1 записи в таблицу фактов
+       
    END;
 */
 
@@ -27,16 +27,15 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     ------------------------------------------------------------------------------
     ------------------------- Процедура для записи логов -------------------------
     ------------------------------------------------------------------------------
-    PROCEDURE log_err (PROGRAM_NAME IN VARCHAR2, procedure_name IN VARCHAR2, code IN VARCHAR2, 
-                       error_message IN VARCHAR2, error_position IN VARCHAR2) 
+    PROCEDURE write_log (level_log IN VARCHAR2, program_name IN VARCHAR2, procedure_name IN VARCHAR2,
+                         message IN VARCHAR2) 
     IS
         -- включение автономных транзакций
         PRAGMA AUTONOMOUS_TRANSACTION;
     BEGIN
-        insert into log_error values (PROGRAM_NAME, procedure_name, code, 
-                                      error_message, error_position, systimestamp);
+        insert into log_table values (systimestamp, level_log, program_name, procedure_name, message);
         commit;
-    END log_err;
+    END write_log;
 
 
     ------------------------------------------------------------------------------
@@ -54,7 +53,8 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         city_index           NUMBER;
         flag                 NUMBER(1);
         procedure_name       VARCHAR2(100) := 'FILL_SUPPLIERS';
-        
+        message              VARCHAR2(1000);
+        i                    NUMBER;
     BEGIN
         cities(1) := 'Москва';
         cities(2) := 'Санкт-Петербург';
@@ -64,10 +64,11 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         cities(6) := 'Тула';
         country := 'Россия';
         -- получение всех доступных кодов категорий
+        i := 1;
         for rowCategory in (select category_id from category) loop
             -- получаем 1, если этот код уже есть в поставщиках, иначе 0
             select case when exists(select * from DIM_SUPPLIERS 
-										where category = rowCategory.category_id)
+                                    where category = rowCategory.category_id)
                         then 1 
                         else 0
                     end
@@ -81,10 +82,16 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
                 insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, rowCategory.category_id, 
                                                   name, country, city, sysdate);
             end if;
+            i := i + 1;
         end loop;
         commit;
+        if i > 0 then
+            message := 'Successful writing of '||TO_CHAR(i)||' lines';
+            write_log('INFO', PROGRAM_NAME, procedure_name, message);
+        end if;
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     END FILL_SUPPLIERS;
 
 
@@ -93,6 +100,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     -----------------------------------------------------------------------------
     PROCEDURE FILL_PRODUCTS (bins IN NUMBER) IS
         procedure_name       VARCHAR2(100) := 'FILL_PRODUCTS';
+        message              VARCHAR2(1000);
     BEGIN
         for i in 1..bins loop 
             insert into dim_products (description, name, product_id, category_id, brand, price, last_update_date)
@@ -109,9 +117,12 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
             );
         end loop;
         commit;
+        message := 'Successful writing of '||TO_CHAR(bins)||' lines';
+        write_log('INFO', PROGRAM_NAME, procedure_name, message);
         FILL_SUPPLIERS;
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     end FILL_PRODUCTS;
 
 
@@ -129,6 +140,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         c_mail               VARCHAR2(50);
         c_last_update_date   DATE;
         procedure_name       VARCHAR2(100) := 'FILL_CUSTOMERS';
+        message              VARCHAR2(1000);
     BEGIN
         -- выбираем максимальный итерируемый id    
         select max(customer_id) into c_id_st from dim_customers;
@@ -157,8 +169,11 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
             c_id_st := c_id_st + 1;
         end loop;
         commit;
+        message := 'Successful writing of '||TO_CHAR(c_id_end)||' lines';
+        write_log('INFO', PROGRAM_NAME, procedure_name, message);
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     end FILL_CUSTOMERS;
     
     
@@ -166,26 +181,30 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     ------------------ Процедура наполнения таблицы FCT_EVENTS ------------------
     -----------------------------------------------------------------------------
      PROCEDURE FILL_FCT_PROD IS
-        rdn                 NUMBER;
-        procedure_name      VARCHAR2(100) := 'FILL_FCT_PROD';
+        rdn                  NUMBER;
+        -- procedure_name       VARCHAR2(100) := 'FILL_FCT_PROD';
+        -- message              VARCHAR2(1000);
     BEGIN  
         rdn := dbms_random.value(5100, 10200); --случайное количество транзакций за 5 мин
         FILL_FCT_PROD_DISCRETE(rdn)
-    EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+    -- EXCEPTION WHEN others THEN
+        -- message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        -- write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     END FILL_FCT_PROD;
+    
     
     ----------------------------------------------------------------------------------------
     ---------- Процедура наполнения таблицы FCT_EVENTS на указанное число записей ----------
     ----------------------------------------------------------------------------------------
     PROCEDURE FILL_FCT_PROD_DISCRETE (rdn IN NUMBER) IS
-        prod_id             NUMBER;
-        cust_id             NUMBER;
-        temp                DATE;  
-        delta               NUMBER;
-        l_col_p             NUMBER;
-        l_col_c             NUMBER;
-        procedure_name      VARCHAR2(100) := 'FILL_FCT_PROD_DISCRETE';
+        prod_id              NUMBER;
+        cust_id              NUMBER;
+        temp                 DATE;  
+        delta                NUMBER;
+        l_col_p              NUMBER;
+        l_col_c              NUMBER;
+        procedure_name       VARCHAR2(100) := 'FILL_FCT_PROD_DISCRETE';
+        message              VARCHAR2(1000);
     BEGIN  
         select SYSDATE into temp from dual; --инициализация текущего времени;
         select max(product_id) + 1 into l_col_p from dim_products; --число строк в таблице товаров
@@ -207,8 +226,11 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
             temp := temp + numToDSInterval(delta, 'second');  --инкрементация текущего времени;        
         end loop;      
         commit;
+        message := 'Successful writing of '||TO_CHAR(rdn)||' lines';
+        write_log('INFO', PROGRAM_NAME, procedure_name, message);
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     END FILL_FCT_PROD_DISCRETE;
 
 END OKKO;
