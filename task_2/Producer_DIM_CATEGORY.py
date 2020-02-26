@@ -1,6 +1,6 @@
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 from collections import namedtuple
 import datetime
 import json
