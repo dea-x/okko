@@ -1,22 +1,23 @@
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 from collections import namedtuple
 import datetime
 import json
 
 # Topic name
-TOPIC = 'fct_events'
+TOPIC = 'dim_category'
 # Parameters of database source
 DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'user': 'test_user',
                    'password': 'test_user',
-                   'table': 'fct_events'}
+                   'table': 'dim_category'}
 # Parameters of database destination
 DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
                    'user': 'test_user',
                    'password': 'test_user',
-                   'table': 'fct_events'}
+                   'table': 'DIM_CATEGORY'}
+SERVER_ADDRESS = 'cdh631.itfbgroup.local:9092'
 
 
 def serializer():
@@ -25,13 +26,13 @@ def serializer():
 
 # The implementation of the producer
 def send_to_Kafka(rows):
-    producer = KafkaProducer(bootstrap_servers=['cdh631.itfbgroup.local:9092'],
-                             value_serializer=serializer())
+    producer = KafkaProducer(bootstrap_servers=[SERVER_ADDRESS], value_serializer=serializer())
     for row in rows:
         try:
-            producer.send(TOPIC, key=str('fct_events'), value=json.dumps(row.asDict(), default=str))
+            producer.send(TOPIC, key=str('dim_category'), value=json.dumps(row.asDict(), default=str))
         except Exception as e:
-            write_log('ERROR', 'Producer_FCT_EVENTS', 'send_to_Kafka', str(e)[:1000])
+            # write_log('ERROR', 'Producer_DIM_CATEGORY', 'send_to_Kafka', str(e)[:1000])
+            pass
     producer.flush()
 
 
@@ -73,23 +74,38 @@ def write_log(level_log, program_name, procedure_name, message):
         .save()
 
 
+def get_offset():
+    ''' Function to receive current offset '''
+    consumer = KafkaConsumer(TOPIC, bootstrap_servers=[SERVER_ADDRESS])
+    # get partition
+    part = consumer.partitions_for_topic(TOPIC)
+    part = part.pop()
+    tp = TopicPartition(TOPIC, part)
+    consumer.topics()
+    return consumer.position(tp)
+
+
 def main():
     try:
-        # Connection to the Bases
+        start_offset = get_offset()
+        # Connection to the bases
         df_source, df_target = connection_to_bases()
         # Finding the max increment value
-        maxID = next(df_target.agg({'event_id': 'max'}).toLocalIterator())[0]
-        maxID = 0 if maxID is None else maxID
+        maxID = next(df_target.agg({'category_id': 'max'}).toLocalIterator())[0]
         # Creation of final dataframe
-        dfResult = df_source.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000))
+        if maxID is None:
+            dfResult = df_source
+        else:
+            dfResult = df_source.where(sf.col('category_id') > maxID)
         # Sending dataframe to Kafka
         dfResult.foreachPartition(send_to_Kafka)
-        count = dfResult.count()
+        # Count offset
+        end_offset = get_offset()
+        count = end_offset - start_offset  # = df_result.count()
         # Write to logs
-        write_log('INFO', 'Producer_FCT_EVENTS', 'main', "Successful sending of {0} lines".format(count))
+        write_log('INFO', 'Producer_DIM_CATEGORY.py', 'main', "Successful sending of {0} lines".format(count))
     except Exception as e:
-        write_log('ERROR', 'Producer_FCT_EVENTS', 'main', str(e)[:1000])
+        write_log('ERROR', 'Producer_DIM_CATEGORY.py', 'main', str(e)[:1000])
 
 
 main()
-

@@ -9,7 +9,7 @@ from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 
 # CONSTANTS
 # Topic name
-TOPIC = 'dim_customers'
+TOPIC = 'DIM_EVENT_TYPE'
 # Parameters of database source
 DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'user': 'test_user',
@@ -102,12 +102,9 @@ def main():
     try:
         start_offset = get_offset()
         df_source, df_target = connection_to_bases()
-        last_date = next(df_target.agg({"last_update_date": "max"}).toLocalIterator())[0]
-        # last_date = datetime.datetime(2000, 1, 1, 0, 0, 0) if last_date is None else last_date
-        if last_date is None:
-            df_result = df_source
-        else:
-            df_result = df_source.where(sf.col("last_update_date") > last_date)
+        max_id = next(df_target.agg({"event_id ": "max"}).toLocalIterator())[0]
+        max_id = 0 if max_id is None else max_id
+        df_result = df_source.where(sf.col("event_id") > max_id)
         # Sending dataframe to Kafka
         df_result.foreachPartition(send_to_Kafka)
         # Writing log
