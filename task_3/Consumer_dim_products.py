@@ -1,8 +1,12 @@
+import os
+
 from pyspark.shell import spark, sc, sqlContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
 import json
 import time
+
+os.environ['SPARK_HOME'] = "/user/spark"
 
 START = 0
 PARTITION = 0

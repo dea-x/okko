@@ -15,21 +15,29 @@ PORT = "1521"
 SID = "orcl"
 
 TARGET_DB_TABLE_NAME = "FCT_EVENTS"
+OFFSET_TABLE_NAME = "OFFSET_FCT_EVENTS"
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
 
 def parse(line):
+    """ Parsing JSON messages from Kafka Producer """
     data = json.loads(line)
     return data['event_time'], data['event_type'], data['event_id'], data['product_id'], data['category_id'], data[
         'category_code'], data['brand'], data['price'], data['customer_id']
 
 
 def deserializer():
+    """ Deserializer messages from Kafka Producer """
     return bytes.decode
 
 
 def save_data(rdd):
+    """
+    Parsing JSON value in each RDDs
+    Creating Spark SQL DataFrame from RDD
+    Writing DataFrame to HDFS and Oracle DB
+    """
     if not rdd.isEmpty():
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
@@ -59,26 +67,54 @@ def save_data(rdd):
     return rdd
 
 
-def storeOffsetRanges(rdd):
+def store_offset_ranges(rdd):
+    """
+    Storing offsets
+    OffsetRanges represents a range of offsets from a single Kafka TopicAndPartition
+    """
     global offsetRanges
     offsetRanges = rdd.offsetRanges()
     return rdd
 
 
-def printOffsetRanges(rdd):
+def write_offset_ranges(rdd):
+    """
+    Writing value of untilOffset to *.txt file
+    :param untilOffset: Exclusive ending offset.
+    """
     for o in offsetRanges:
-        f = open('offset_value_fct_events.txt', 'w')
-        f.write(str(o.untilOffset))
-        f.close()
+        currentOffset = int(o.untilOffset)
+        df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
+        df1.write \
+            .format("jdbc") \
+            .mode("append") \
+            .option("driver", 'oracle.jdbc.OracleDriver') \
+            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+            .option("dbtable", OFFSET_TABLE_NAME) \
+            .option("user", TARGET_DB_USER_NAME) \
+            .option("password", TARGET_DB_USER_PASSWORD) \
+            .save()
 
 
 if __name__ == "__main__":
     ssc = StreamingContext(sc, 5)
+
+    df1 = spark.read \
+        .format("jdbc") \
+        .option("driver", 'oracle.jdbc.OracleDriver') \
+        .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+        .option("dbtable", OFFSET_TABLE_NAME) \
+        .option("user", TARGET_DB_USER_NAME) \
+        .option("password", TARGET_DB_USER_PASSWORD) \
+        .load()
+
+    maxOffset = df1.agg({'OFFSET': 'max'}).collect()[0][0]
+    if maxOffset == None:
+        maxOffset = 0
+
     topicPartion = TopicAndPartition(TOPIC, PARTITION)
-    f = open('offset_value_fct_events.txt', 'r')
-    start = int(f.read())
-    f.close()
-    fromOffset = {topicPartion: start}
+
+    fromOffset = {topicPartion: maxOffset}
     kafkaParams = {"metadata.broker.list": BROKER_LIST}
     kafkaParams["enable.auto.commit"] = "false"
 
@@ -87,8 +123,8 @@ if __name__ == "__main__":
 
     time.sleep(5)
     directKafkaStream.foreachRDD(lambda x: save_data(x))
-    directKafkaStream.transform(storeOffsetRanges) \
-        .foreachRDD(printOffsetRanges)
+    directKafkaStream.transform(store_offset_ranges) \
+        .foreachRDD(write_offset_ranges)
 
     ssc.start()
     ssc.awaitTermination()

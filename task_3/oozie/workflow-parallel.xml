@@ -17,7 +17,6 @@
             <jar>${PythonPath}/Consumer_dim_customers.py</jar>
              <spark-opts>
              </spark-opts>
-             <arg>${arg_1}</arg>
         </spark>
         <ok to="joining" />
         <error to="kill" />
@@ -33,7 +32,6 @@
             <jar>${PythonPath}/Consumer_dim_products.py</jar>
              <spark-opts>
              </spark-opts>
-             <arg>${arg_2}</arg>
         </spark>
         <ok to="joining" />
         <error to="kill" />
@@ -47,9 +45,8 @@
             <name>${child_app}</name>
             <class>Consumer_dim_suppliers</class>
             <jar>${PythonPath}/Consumer_dim_suppliers.py</jar>
-             <spark-opts>
+               <spark-opts>
              </spark-opts>
-             <arg>${arg_3}</arg>
         </spark>
         <ok to="joining" />
         <error to="kill" />
@@ -63,9 +60,8 @@
             <name>${child_app}</name>
             <class>Consumer_fct_events</class>
             <jar>${PythonPath}/Consumer_fct_events.py</jar>
-             <spark-opts>
+           <spark-opts>
              </spark-opts>
-            <arg>${arg_4}</arg>
         </spark>
         <ok to="joining" />
         <error to="kill" />

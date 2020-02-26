@@ -1,0 +1,32 @@
+<workflow-app xmlns='uri:oozie:workflow:0.1' name='${workflow_name}'>
+    <start to='spark-shell-node1'/>
+    <action name='spark-shell-node1'>
+        <shell xmlns="uri:oozie:shell-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <exec>spark-submit</exec>
+            <argument>--master</argument>
+            <argument>local[*]</argument>
+            <argument>--packages</argument>
+            <argument>org.apache.spark:spark-streaming-kafka-0-8-assembly_2.11:2.4.3</argument>
+            <argument>--conf</argument>
+            <argument>spark.driver.extraJavaOptions=-Diop.version=4.1.0.0</argument>
+            <argument>--conf</argument>
+            <argument>spark.executor.extraJavaOptions=-Diop.version = 4.1.0.0</argument>
+            <argument>--conf</argument>
+            <argument>spark.yarn.am.extraJavaOptions=-Diop.version = 4.1.0.0</argument>
+            <argument>Consumer_dim_products.py</argument>
+            <env-var>SPARK_HOME=/opt/cloudera/parcels/CDH-6.3.1-1.cdh6.3.1.p0.1470567/lib/spark</env-var>
+            <file>${PythonPath}/Consumer_dim_products.py</file>
+            <capture-output/>
+        </shell>
+        <ok to="end" />
+        <error to="kill" />
+    </action>
+    <kill name="kill">
+        <message>Workflow failed, error
+            message[${wf:errorMessage(wf:lastErrorNode())}]
+        </message>
+    </kill>
+    <end name='end' />
+</workflow-app>
