@@ -31,7 +31,7 @@ def send_to_Kafka(rows):
         try:
             producer.send(TOPIC, key=str('fct_events'), value=json.dumps(row.asDict(), default=str))
         except Exception as e:
-            write_log('ERROR', 'Producer_FCT_EVENTS', 'send_to_Kafka', str(e))
+            write_log('ERROR', 'Producer_FCT_EVENTS', 'send_to_Kafka', str(e)[:1000])
     producer.flush()
 
 
@@ -78,16 +78,18 @@ def main():
         # Connection to the Bases
         df_source, df_target = connection_to_bases()
         # Finding the max increment value
-        maxID = next(df_target.agg({'id': 'max'}).toLocalIterator())[0]
+        maxID = next(df_target.agg({'event_id': 'max'}).toLocalIterator())[0]
         maxID = 0 if maxID is None else maxID
         # Creation of final dataframe
-        dfResult = df_source.where((sf.col('id') > maxID) & (sf.col('id') < maxID + 1000000))
+        dfResult = df_source.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000))
         # Sending dataframe to Kafka
         dfResult.foreachPartition(send_to_Kafka)
+        count = dfResult.count()
         # Write to logs
-        write_log('INFO', 'Producer_FCT_EVENTS', 'main', str(e))
+        write_log('INFO', 'Producer_FCT_EVENTS', 'main', "Successful sending of {0} lines".format(count))
     except Exception as e:
-        write_log('ERROR', 'Producer_FCT_EVENTS', 'main', str(e))
+        write_log('ERROR', 'Producer_FCT_EVENTS', 'main', str(e)[:1000])
 
 
 main()
+
