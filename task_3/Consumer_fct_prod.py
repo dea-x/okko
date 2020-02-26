@@ -1,6 +1,8 @@
 from pyspark.shell import spark, sc, sqlContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
+from collections import namedtuple
+import datetime
 import json
 import time
 
@@ -15,6 +17,7 @@ SID = "orcl"
 
 TARGET_DB_TABLE_NAME = "FCT_PROD"
 OFFSET_TABLE_NAME = "OFFSET_FCT_PROD"
+LOG_TABLE_NAME = "LOG_TABLE_TARGET"
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
@@ -29,6 +32,20 @@ def parse(line):
 def deserializer():
     """ Deserializer messages from Kafka Producer """
     return bytes.decode
+
+def write_log(level_log, program_name, message):
+    log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME MESSAGE'.split())
+    data = log_row(datetime.datetime.today(), level_log, program_name, message)
+    result = spark.createDataFrame([data])
+    result.write \
+        .format('jdbc') \
+        .mode('append') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+        .option('dbtable', LOG_TABLE_NAME) \
+        .option('user', TARGET_DB_USER_NAME) \
+        .option('password', TARGET_DB_USER_PASSWORD) \
+        .save()
 
 
 def save_data(rdd):
@@ -63,7 +80,7 @@ def save_data(rdd):
         to_timestamp(_3) as event_time,_4 as product_id,_5 as customer_id
                     from t where _1 > ''' + str(max_id) + ''')
         where RN = 1''')
-        
+        count = result.count()
         try:
             # Writing to HDFS
             result.write \
@@ -82,8 +99,11 @@ def save_data(rdd):
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
+            write_log('INFO', TARGET_DB_TABLE_NAME, '{} rows inserted successfully'.format(count))
+
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
+            write_log('ERROR', TARGET_DB_TABLE_NAME, str(e)[:1000])
             flag = True
     else:
         ssc.stop()
