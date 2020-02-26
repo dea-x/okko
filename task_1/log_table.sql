@@ -14,7 +14,7 @@ END;
 CREATE TABLE log_table (
     time_log            TIMESTAMP,
     level_log           VARCHAR2(10),
-    program_name        VARCHAR2(20),
+    program_name        VARCHAR2(40),
     procedure_name      VARCHAR2(40),
     message             VARCHAR2(1000)
 );

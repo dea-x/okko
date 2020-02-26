@@ -9,7 +9,7 @@ from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 
 # CONSTANTS
 # Topic name
-TOPIC = 'dim_customers'
+TOPIC = 'dim_event_type'
 # Parameters of database source
 DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'user': 'test_user',
@@ -48,7 +48,7 @@ def connection_to_bases():
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
         .option('url', DATABASE_SOURCE['url']) \
-        .option('dbtable', "dim_customers") \
+        .option('dbtable', "dim_event_type") \
         .option('user', DATABASE_SOURCE['user']) \
         .option('password', DATABASE_SOURCE['password']) \
         .load()
@@ -58,7 +58,7 @@ def connection_to_bases():
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
         .option('url', DATABASE_TARGET['url']) \
-        .option('dbtable', "dim_customers") \
+        .option('dbtable', "dim_event_type") \
         .option('user', DATABASE_TARGET['user']) \
         .option('password', DATABASE_TARGET['password']) \
         .load()
@@ -95,6 +95,7 @@ def get_offset():
     # part = part.pop()
     tp = TopicPartition(TOPIC, 0)
     consumer.topics()
+    # consumer.seek_to_end(tp)
     return consumer.position(tp)
 
 
@@ -102,12 +103,9 @@ def main():
     try:
         start_offset = get_offset()
         df_source, df_target = connection_to_bases()
-        last_date = next(df_target.agg({"last_update_date": "max"}).toLocalIterator())[0]
-        # last_date = datetime.datetime(2000, 1, 1, 0, 0, 0) if last_date is None else last_date
-        if last_date is None:
-            df_result = df_source
-        else:
-            df_result = df_source.where(sf.col("last_update_date") > last_date)
+        max_id = next(df_target.agg({"EVENT_ID": "max"}).toLocalIterator())[0]
+        max_id = 0 if max_id is None else max_id
+        df_result = df_source.where(sf.col("EVENT_ID") > max_id)
         # Sending dataframe to Kafka
         df_result.foreachPartition(send_to_Kafka)
         # Writing log
