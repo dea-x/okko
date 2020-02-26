@@ -1,5 +1,5 @@
 BEGIN
-    EXECUTE IMMEDIATE 'drop table fct_short';
+    EXECUTE IMMEDIATE 'drop table fct_prod';
 EXCEPTION 
     WHEN others THEN
         NULL;
