@@ -65,7 +65,7 @@ def connection_to_bases():
     return df_source, df_target
 
 
-def write_log(level_log, program_name, procedure_name, message) -> None:
+def write_log(level_log, program_name, procedure_name, message):
     """ Function for writing log
 
     :param level_log: level of logging, can be one of ["INFO", "WARN", "ERROR"];
