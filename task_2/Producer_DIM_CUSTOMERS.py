@@ -13,11 +13,14 @@ TOPIC = 'dim_customers'
 # Parameters of database source
 DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'user': 'test_user',
-                   'password': 'test_user'}
+                   'password': 'test_user',
+                   'table': 'dim_customers'}
 # Parameters of database destination
 DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
                    'user': 'test_user',
-                   'password': 'test_user'}
+                   'password': 'test_user',
+                   'table': 'dim_customers'}
+LOG_TABLE_NAME = 'log_table'
 SERVER_ADDRESS = "cdh631.itfbgroup.local:9092"
 # program name
 SCRIPT_NAME = os.path.basename(__file__)
@@ -48,7 +51,7 @@ def connection_to_bases():
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
         .option('url', DATABASE_SOURCE['url']) \
-        .option('dbtable', "dim_customers") \
+        .option('dbtable', DATABASE_TARGET['table']) \
         .option('user', DATABASE_SOURCE['user']) \
         .option('password', DATABASE_SOURCE['password']) \
         .load()
@@ -58,7 +61,7 @@ def connection_to_bases():
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
         .option('url', DATABASE_TARGET['url']) \
-        .option('dbtable', "dim_customers") \
+        .option('dbtable', DATABASE_TARGET['table']) \
         .option('user', DATABASE_TARGET['user']) \
         .option('password', DATABASE_TARGET['password']) \
         .load()
@@ -81,7 +84,7 @@ def write_log(level_log, program_name, procedure_name, message):
         .mode("append") \
         .option("driver", 'oracle.jdbc.OracleDriver') \
         .option("url", DATABASE_SOURCE['url']) \
-        .option("dbtable", 'log_table') \
+        .option("dbtable", LOG_TABLE_NAME) \
         .option("user", DATABASE_SOURCE['user']) \
         .option("password", DATABASE_SOURCE['password']) \
         .save()
