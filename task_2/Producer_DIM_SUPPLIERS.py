@@ -5,11 +5,11 @@ import os
 
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 
 # CONSTANTS
 # Topic name
-TOPIC = 'dim_suppliers'
+TOPIC = 'dim_suppliers_kozyar'
 # Parameters of database source
 DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'user': 'test_user',
@@ -94,8 +94,20 @@ def write_log(level_log, program_name, procedure_name, message):
         .save()
 
 
+def get_offset():
+    """ Function to receive current offset """
+    consumer = KafkaConsumer(TOPIC, bootstrap_servers=[SERVER_ADDRESS])
+    # get partition
+    part = consumer.partitions_for_topic(TOPIC)
+    part = part.pop()
+    tp = TopicPartition(TOPIC, part)
+    consumer.topics()
+    return consumer.position(tp)
+
+
 def main():
     try:
+        start_offset = get_offset()
         df_source, df_target = connection_to_bases()
         last_date = next(df_target.agg({"last_update_date": "max"}).toLocalIterator())[0]
         # last_date = datetime.datetime(2000, 1, 1, 0, 0, 0) if last_date is None else last_date
@@ -106,7 +118,8 @@ def main():
         # Sending dataframe to Kafka
         df_result.foreachPartition(send_to_Kafka)
         # Writing log
-        count = df_result.count()
+        end_offset = get_offset()
+        count = end_offset - start_offset  # = df_result.count()
         write_log("INFO", SCRIPT_NAME, "main", "Successful sending of {0} lines".format(count))
     except Exception as err:
         write_log("ERROR", SCRIPT_NAME, "main", str(err)[:1000])
