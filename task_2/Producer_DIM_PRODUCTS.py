@@ -1,73 +1,95 @@
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
 from kafka import KafkaProducer
+from collections import namedtuple
+import datetime
 import json
+
+# Topic name
+TOPIC = 'dim_products'
+# Parameters of database source
+DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
+                   'user': 'test_user',
+                   'password': 'test_user',
+                   'table': 'dim_products'}
+# Parameters of database destination
+DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
+                   'user': 'test_user',
+                   'password': 'test_user',
+                   'table': 'DIM_PRODUCTS'}
 
 
 def serializer():
     return str.encode
 
 
-# Serialization in JSON
-def build_JSON(product_id, category_id, category_code, brand, description, name, price, last_update_date):
-    data = dict(product_id=product_id, category_id=category_id, category_code=category_code, brand=brand,
-                description=description, name=name, price=price, last_update_date=last_update_date)
-    return json.dumps(data)
-
-
 # The implementation of the producer
-def producer_to_Kafka(dfResult):
+def send_to_Kafka(rows):
     producer = KafkaProducer(bootstrap_servers=['cdh631.itfbgroup.local:9092'],
                              value_serializer=serializer())
-
-    for i in range(len(dfResult)):
+    for row in rows:
         try:
-            product_id = int(dfResult[i]['PRODUCT_ID'])
-            category_id = int(dfResult[i]['CATEGORY_ID'])
-            category_code = dfResult[i]['CATEGORY_CODE']
-            brand = dfResult[i]['BRAND']
-            description = dfResult[i]['DESCRIPTION']
-            name = dfResult[i]['NAME']
-            price = int(dfResult[i]['PRICE'])
-            last_update_date = str(dfResult[i]['LAST_UPDATE_DATE'])
-
-            values = build_JSON(product_id, category_id, category_code, brand, description, name, price,
-                                last_update_date)
-            print(values)
-            future = producer.send(TOPIC, key=str('dim_products'), value=values)
-
+            producer.send(TOPIC, key=str('dim_products'), value=json.dumps(row.asDict(), default=str))
         except Exception as e:
-            print('--> It seems an Error occurred: {}'.format(e))
-
+            write_log('ERROR', 'Producer_DIM_PRODUCTS', 'send_to_Kafka', str(e))
     producer.flush()
 
 
-if __name__ == '__main__':
-    TOPIC = 'dim_products'
-
-    # Creating a dataframe for the source table
-    df0 = spark.read \
-        .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:oradb") \
-        .option("dbtable", "dim_products") \
-        .option("user", "test_user") \
-        .option("password", "test_user") \
+def connection_to_bases():
+    # creating a dataframe for the source table
+    df_source = spark.read \
+        .format('jdbc') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', DATABASE_SOURCE['url']) \
+        .option('dbtable', DATABASE_SOURCE['table']) \
+        .option('user', DATABASE_SOURCE['user']) \
+        .option('password', DATABASE_SOURCE['password']) \
         .load()
 
-    # Creating a dataframe for the recipient table
-    df1 = spark.read \
-        .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.95:1521:orcl") \
-        .option("dbtable", "DIM_PRODUCTS") \
-        .option("user", "test_user") \
-        .option("password", "test_user") \
+    # creating a dataframe for the target table
+    df_target = spark.read \
+        .format('jdbc') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', DATABASE_TARGET['url']) \
+        .option('dbtable', DATABASE_TARGET['table'].upper()) \
+        .option('user', DATABASE_TARGET['user']) \
+        .option('password', DATABASE_TARGET['password']) \
         .load()
-    
-    maxID = df1.agg({'last_update_date': 'max'}).collect()[0][0]
-    if maxID == None:
-        dfResult = df0.collect()
-    else:
-        dfResult = df0.where(sf.col('last_update_date') > maxID).collect()
-    producer_to_Kafka(dfResult)
+    return df_source, df_target
+
+
+def write_log(level_log, program_name, procedure_name, message):
+    log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
+    data = log_row(datetime.datetime.today(), level_log, program_name, procedure_name, message)
+    result = spark.createDataFrame([data])
+    result.write \
+        .format("jdbc") \
+        .mode("append") \
+        .option("driver", 'oracle.jdbc.OracleDriver') \
+        .option("url", DATABASE_SOURCE['url']) \
+        .option("dbtable", 'log_table') \
+        .option("user", DATABASE_SOURCE['user']) \
+        .option("password", DATABASE_SOURCE['password']) \
+        .save()
+
+
+def main():
+    try:
+        # Connection to the bases
+        df_source, df_target = connection_to_bases()
+        # Finding the max increment value
+        maxID = next(df_target.agg({'last_update_date': 'max'}).toLocalIterator())[0]
+        # Creation of final dataframe
+        if maxID is None:
+            dfResult = df_source
+        else:
+            dfResult = df_source.where(sf.col('last_update_date') > maxID)
+        # Sending dataframe to Kafka
+        dfResult.foreachPartition(send_to_Kafka)
+        # Write to logs
+        write_log('INFO', 'Producer_DIM_PRODUCTS', 'main', str(e))
+    except Exception as e:
+        write_log('ERROR', 'Producer_DIM_PRODUCTS', 'main', str(e))
+
+
+main()
