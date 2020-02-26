@@ -102,6 +102,7 @@ def get_offset():
     # part = part.pop()
     tp = TopicPartition(TOPIC, 0)
     consumer.topics()
+    # consumer.seek_to_end(tp)
     return consumer.position(tp)
 
 
