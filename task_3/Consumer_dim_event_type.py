@@ -18,6 +18,8 @@ OFFSET_TABLE_NAME = "OFFSET_DIM_EVENT_TYPE"
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
+URL_LOG_TABLE = "jdbc:oracle:thin:@192.168.88.252:1521:oradb"
+LOG_TABLE_NAME = "log_table"
 
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
@@ -27,6 +29,20 @@ def parse(line):
 def deserializer():
     """ Deserializer messages from Kafka Producer """
     return bytes.decode
+
+def write_log(level_log, program_name, procedure_name, message):
+    log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
+    data = log_row(datetime.datetime.today(), level_log, program_name, procedure_name, message)
+    result = spark.createDataFrame([data])
+    result.write \
+        .format('jdbc') \
+        .mode('append') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', URL_LOG_TABLE) \
+        .option('dbtable', LOG_TABLE_NAME) \
+        .option('user', TARGET_DB_USER_NAME) \
+        .option('password', TARGET_DB_USER_PASSWORD) \
+        .save()
 
 def save_data(rdd):
     global flag
@@ -41,7 +57,8 @@ def save_data(rdd):
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
         result = spark.sql("select _1 as event_id,_2 as event_type from t")
-
+        
+        count = result.count()
         
         try:
             # Writing to HDFS
@@ -61,8 +78,12 @@ def save_data(rdd):
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
+                
+            write_log('INFO', TARGET_DB_TABLE_NAME, 'main', '{} rows inserted successfully'.format(count))
+
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
+            write_log('ERROR', TARGET_DB_TABLE_NAME, 'main', str(e)[:1000])
             flag = True
     else:
         ssc.stop()

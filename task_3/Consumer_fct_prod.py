@@ -16,9 +16,10 @@ PORT = "1521"
 SID = "orcl"
 
 URL_LOG_TABLE = "jdbc:oracle:thin:@192.168.88.252:1521:oradb"
+LOG_TABLE_NAME = "log_table"
+
 TARGET_DB_TABLE_NAME = "FCT_PROD"
 OFFSET_TABLE_NAME = "OFFSET_FCT_PROD"
-LOG_TABLE_NAME = "log_table"
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
@@ -81,7 +82,9 @@ def save_data(rdd):
         to_timestamp(_3) as event_time,_4 as product_id,_5 as customer_id
                     from t where _1 > ''' + str(max_id) + ''')
         where RN = 1''')
+        
         count = result.count()
+        
         try:
             # Writing to HDFS
             result.write \
@@ -100,11 +103,12 @@ def save_data(rdd):
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
+                
             write_log('INFO', TARGET_DB_TABLE_NAME, 'main', '{} rows inserted successfully'.format(count))
 
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
-            write_log('ERROR', 'Consumer_fct_prod.py', 'main', str(e)[:1000])
+            write_log('ERROR', TARGET_DB_TABLE_NAME, 'main', str(e)[:1000])
             flag = True
     else:
         ssc.stop()
