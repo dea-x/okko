@@ -1,0 +1,76 @@
+<workflow-app xmlns='uri:oozie:workflow:0.1' name='${workflow_name}'>
+    <start to="forking"/>
+     <fork name="forking">
+      <path start="spark-process_1"/>
+      <path start="spark-process_2"/>
+      <path start="spark-process_3"/>
+      <path start="spark-process_4"/>
+    </fork>
+    <action name='spark-process_1'>
+        <spark xmlns="uri:oozie:spark-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <master>${master}</master>
+            <mode>${mode}</mode>
+            <name>${child_app}</name>
+            <class>Producer_DIM_CUSTOMERS</class>
+            <jar>${PythonPath}/Producer_DIM_CUSTOMERS.py</jar>
+             <spark-opts>
+             </spark-opts>
+        </spark>
+        <ok to="joining" />
+        <error to="kill" />
+    </action>
+     <action name='spark-process_2'>
+        <spark xmlns="uri:oozie:spark-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <master>${master}</master>
+            <mode>${mode}</mode>
+            <name>${child_app}</name>
+            <class>Producer_DIM_PRODUCTS</class>
+            <jar>${PythonPath}/Producer_DIM_PRODUCTS.py</jar>
+             <spark-opts>
+             </spark-opts>
+        </spark>
+        <ok to="joining" />
+        <error to="kill" />
+     </action>
+     <action name='spark-process_3'>
+        <spark xmlns="uri:oozie:spark-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <master>${master}</master>
+            <mode>${mode}</mode>
+            <name>${child_app}</name>
+            <class>Producer_DIM_SUPPLIERS</class>
+            <jar>${PythonPath}/Producer_DIM_SUPPLIERS.py</jar>
+             <spark-opts>
+             </spark-opts>
+        </spark>
+        <ok to="joining" />
+        <error to="kill" />
+    </action>
+     <action name='spark-process_4'>
+        <spark xmlns="uri:oozie:spark-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <master>${master}</master>
+            <mode>${mode}</mode>
+            <name>${child_app}</name>
+            <class>Producer_FCT_EVENTS</class>
+            <jar>${PythonPath}/Producer_FCT_EVENTS.py</jar>
+             <spark-opts>
+             </spark-opts>
+        </spark>
+        <ok to="joining" />
+        <error to="kill" />
+    </action>
+    <join name="joining" to="end"/>
+    <kill name="kill">
+        <message>Workflow failed, error
+            message[${wf:errorMessage(wf:lastErrorNode())}]
+        </message>
+    </kill>
+    <end name='end' />
+</workflow-app>
