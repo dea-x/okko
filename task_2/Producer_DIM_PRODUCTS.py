@@ -79,8 +79,7 @@ def get_offset():
     consumer = KafkaConsumer(TOPIC, bootstrap_servers=[SERVER_ADDRESS])
     # get partition
     part = consumer.partitions_for_topic(TOPIC)
-    part = part.pop()
-    tp = TopicPartition(TOPIC, part)
+    tp = TopicPartition(TOPIC, 0)
     consumer.topics()
     return consumer.position(tp)
 
