@@ -78,10 +78,10 @@ def main():
         # Connection to the Bases
         df_source, df_target = connection_to_bases()
         # Finding the max increment value
-        maxID = next(df_target.agg({'event_id': 'max'}).toLocalIterator())[0]
+        maxID = next(df_target.agg({'id': 'max'}).toLocalIterator())[0]
         maxID = 0 if maxID is None else maxID
         # Creation of final dataframe
-        dfResult = df_source.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000))
+        dfResult = df_source.where((sf.col('id') > maxID) & (sf.col('id') < maxID + 1000000))
         # Sending dataframe to Kafka
         dfResult.foreachPartition(send_to_Kafka)
         # Write to logs
