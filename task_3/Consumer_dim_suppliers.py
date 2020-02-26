@@ -4,7 +4,6 @@ from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
 import json
 import time
 
-START = 0
 PARTITION = 0
 TOPIC = "dim_suppliers"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'

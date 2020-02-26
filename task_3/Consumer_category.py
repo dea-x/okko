@@ -4,9 +4,8 @@ from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
 import json
 import time
 
-START = 0
 PARTITION = 0
-TOPIC = "dim_customers"
+TOPIC = "category"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
 HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/category"
 

@@ -5,7 +5,7 @@ import json
 import time
 
 PARTITION = 0
-TOPIC = "fct_events"
+TOPIC = "fct_prod"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
 HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/fct_prod"
 
