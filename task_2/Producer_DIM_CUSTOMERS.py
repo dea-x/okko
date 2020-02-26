@@ -48,7 +48,7 @@ def connection_to_bases():
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
         .option('url', DATABASE_SOURCE['url']) \
-        .option('dbtable', "dim_suppliers") \
+        .option('dbtable', "dim_customers") \
         .option('user', DATABASE_SOURCE['user']) \
         .option('password', DATABASE_SOURCE['password']) \
         .load()
@@ -58,7 +58,7 @@ def connection_to_bases():
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
         .option('url', DATABASE_TARGET['url']) \
-        .option('dbtable', "dim_suppliers".upper()) \
+        .option('dbtable', "dim_customers") \
         .option('user', DATABASE_TARGET['user']) \
         .option('password', DATABASE_TARGET['password']) \
         .load()
