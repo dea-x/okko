@@ -4,18 +4,17 @@ from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
 import json
 import time
 
-START = 0
 PARTITION = 0
-TOPIC = "dim_suppliers"
+TOPIC = "dim_products"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
-HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/dim_suppliers"
+HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/dim_products"
 
 HOST_IP = "192.168.88.95"
 PORT = "1521"
 SID = "orcl"
 
-TARGET_DB_TABLE_NAME = "DIM_SUPPLIERS"
-OFFSET_TABLE_NAME = "OFFSET_DIM_SUPPLIERS" 
+TARGET_DB_TABLE_NAME = "DIM_PRODUCTS"
+OFFSET_TABLE_NAME = "OFFSET_DIM_PRODUCTS" 
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
@@ -23,27 +22,26 @@ TARGET_DB_USER_PASSWORD = "test_user"
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
     data = json.loads(line)
-    return data['suppliers_id'], data['category'], data['name'], data['country'], data['city'], data['last_update_date']
+    return data['product_id'], data['category_id'], data['category_code'], data['brand'], data['description'], data['name'], data['price'], data['last_update_date']
     
 def deserializer():
     """ Deserializer messages from Kafka Producer """
     return bytes.decode
 
 def save_data(rdd):
+    global flag
+    flag = False
     """
     Parsing JSON value in each RDDs
     Creating Spark SQL DataFrame from RDD
     Writing DataFrame to HDFS and Oracle DB
     """
-    global flag
-    flag = False
     if not rdd.isEmpty():
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
-        result = spark.sql("select _1 as suppliers_id,_2 as category,_3 as name,_4 as country,_5 as city,to_timestamp(_6) as last_update_date from t")
+        result = spark.sql("select _1 as product_id,_2 as category_id,_3 as category_code,_4 as brand,_5 as description,_6 as name,_7 as price,to_timestamp(_8) as last_update_date from t")
 
-        
         try:
             # Writing to HDFS
             result.write \
@@ -80,7 +78,7 @@ def store_offset_ranges(rdd):
   
 def write_offset_ranges(rdd):
     """
-    Writing value of untilOffset to *.txt file
+    Writing value of untilOffset to DB
     :param untilOffset: Exclusive ending offset.
     """
     if flag != True:

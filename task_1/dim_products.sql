@@ -2,70 +2,70 @@
 create table products (
     product        VARCHAR2(50),
     des            VARCHAR2(100),
-    category_code  VARCHAR2(25)
+    category_id    NUMBER
 );
 
-insert into products (product, des, category_code) values ('Кофеварка', 'Рожковая', 'Кухня');
-insert into products (product, des, category_code) values ('Кофеварка', 'Капельная', 'Кухня');
-insert into products (product, des, category_code) values ('Кофеварка', 'Капсульная', 'Кухня');
-insert into products (product, des, category_code) values ('СВЧ печь', 'СВЧ', 'Кухня');
-insert into products (product, des, category_code) values ('Чайник', 'Стекло', 'Кухня');
-insert into products (product, des, category_code) values ('Чайник', 'Пластик', 'Кухня');
-insert into products (product, des, category_code) values ('Блендер', 'Набор', 'Кухня');
-insert into products (product, des, category_code) values ('Мясорубка', 'Многофункциональный', 'Кухня');
-insert into products (product, des, category_code) values ('ТВ', 'OLED', 'Дом');
-insert into products (product, des, category_code) values ('ТВ', 'QLED', 'Дом');
-insert into products (product, des, category_code) values ('Аудио-система', '5.1', 'Дом');
-insert into products (product, des, category_code) values ('Аудио-система', '7.1', 'Дом');
-insert into products (product, des, category_code) values ('Утюг', 'С парогенератором', 'Дом');
-insert into products (product, des, category_code) values ('Утюг', 'Без парогенератора', 'Дом');
-insert into products (product, des, category_code) values ('Пылесос', 'Мешковый', 'Дом');
-insert into products (product, des, category_code) values ('Пылесос', 'Безмешковый', 'Дом');
-insert into products (product, des, category_code) values ('Триммер', 'Проводной', 'Красота');
-insert into products (product, des, category_code) values ('Триммер', 'Безпроводной', 'Красота');
-insert into products (product, des, category_code) values ('Зубная щетка', 'Набор', 'Красота');
-insert into products (product, des, category_code) values ('Зубная щетка', 'Одна', 'Красота');
-insert into products (product, des, category_code) values ('Фен', 'Профессиональный', 'Красота');
-insert into products (product, des, category_code) values ('Фен', 'Набор', 'Красота');
-insert into products (product, des, category_code) values ('Стайлер', 'Набор', 'Красота');
-insert into products (product, des, category_code) values ('Смартфон', '4inch', 'Mobile');
-insert into products (product, des, category_code) values ('Смартфон', '5inch', 'Mobile');
-insert into products (product, des, category_code) values ('Колонка', '3Вт', 'Mobile');
-insert into products (product, des, category_code) values ('Колонка', '5Вт', 'Mobile');
-insert into products (product, des, category_code) values ('Смарт-часы', 'Резина', 'Mobile');
-insert into products (product, des, category_code) values ('Смарт-часы', 'Текстиль', 'Mobile');
-insert into products (product, des, category_code) values ('Фотоаппарат', 'Зеркальный', 'Mobile');
-insert into products (product, des, category_code) values ('Фотоаппарат', 'Компактный', 'Mobile');
-insert into products (product, des, category_code) values ('Пылесос', 'Вертикальный', 'Дом');
-insert into products (product, des, category_code) values ('Пылесос', 'Робот-пылесос', 'Дом');
-insert into products (product, des, category_code) values ('Увлажнитель', 'С очистителем', 'Дом');
-insert into products (product, des, category_code) values ('Обогреватель', 'Радиаторный', 'Дом');
-insert into products (product, des, category_code) values ('Электробритва', 'Роторная', 'Красота');
-insert into products (product, des, category_code) values ('Холодильник', '2 камеры', 'Кухня');
-insert into products (product, des, category_code) values ('Холодильник', '1 камера', 'Кухня');
-insert into products (product, des, category_code) values ('Стиральная машина', 'Встраиваемая', 'Кухня');
-insert into products (product, des, category_code) values ('Стиральная машина', 'Компакт', 'Дом');
-insert into products (product, des, category_code) values ('Духовой шкаф', 'Встраиваемый', 'Кухня');
-insert into products (product, des, category_code) values ('Духовой шкаф', 'Переносной', 'Дом');
-insert into products (product, des, category_code) values ('Принтер', 'Струйный', 'Mobile');
-insert into products (product, des, category_code) values ('Принтер', 'Лазерный', 'Mobile');
-insert into products (product, des, category_code) values ('Принтер', 'МФУ', 'Mobile');
-insert into products (product, des, category_code) values ('Тостер', 'Черный', 'Кухня');
-insert into products (product, des, category_code) values ('Тостер', 'Белый', 'Кухня');
-insert into products (product, des, category_code) values ('Эпилятор', 'Набор', 'Красота');
-insert into products (product, des, category_code) values ('Машинка для стрижки', 'Набор', 'Красота');
-insert into products (product, des, category_code) values ('Мультиварка', 'Белая', 'Кухня');
-insert into products (product, des, category_code) values ('ТВ', '4К', 'Дом');
-insert into products (product, des, category_code) values ('Монитор', '20inch', 'Mobile');
-insert into products (product, des, category_code) values ('Монитор', '25inch', 'Mobile');
-insert into products (product, des, category_code) values ('Планшет', '9inch', 'Mobile');
-insert into products (product, des, category_code) values ('Светильник', 'LED', 'Дом');
-insert into products (product, des, category_code) values ('Светильник', '40ВТ', 'Дом');
-insert into products (product, des, category_code) values ('Светильник', '15ВТ', 'Дом');
-insert into products (product, des, category_code) values ('Кондиционер', 'Инвентор', 'Дом');
-insert into products (product, des, category_code) values ('Кондиционер', 'Напольный', 'Дом');
-insert into products (product, des, category_code) values ('Видеокамера', '4К', 'Mobile');
-insert into products (product, des, category_code) values ('Видеокамера', 'FullHD', 'Mobile');
+insert into products (product, des, category_id) values ('Кофеварка', 'Рожковая', 2);
+insert into products (product, des, category_id) values ('Кофеварка', 'Капельная', 2);
+insert into products (product, des, category_id) values ('Кофеварка', 'Капсульная', 2);
+insert into products (product, des, category_id) values ('СВЧ печь', 'СВЧ', 2);
+insert into products (product, des, category_id) values ('Чайник', 'Стекло', 2);
+insert into products (product, des, category_id) values ('Чайник', 'Пластик', 2);
+insert into products (product, des, category_id) values ('Блендер', 'Набор', 2);
+insert into products (product, des, category_id) values ('Мясорубка', 'Многофункциональный', 2);
+insert into products (product, des, category_id) values ('ТВ', 'OLED', 1);
+insert into products (product, des, category_id) values ('ТВ', 'QLED', 1);
+insert into products (product, des, category_id) values ('Аудио-система', '5.1', 1);
+insert into products (product, des, category_id) values ('Аудио-система', '7.1', 1);
+insert into products (product, des, category_id) values ('Утюг', 'С парогенератором', 1);
+insert into products (product, des, category_id) values ('Утюг', 'Без парогенератора', 1);
+insert into products (product, des, category_id) values ('Пылесос', 'Мешковый', 1);
+insert into products (product, des, category_id) values ('Пылесос', 'Безмешковый', 1);
+insert into products (product, des, category_id) values ('Триммер', 'Проводной', 3);
+insert into products (product, des, category_id) values ('Триммер', 'Безпроводной', 3);
+insert into products (product, des, category_id) values ('Зубная щетка', 'Набор', 3);
+insert into products (product, des, category_id) values ('Зубная щетка', 'Одна', 3);
+insert into products (product, des, category_id) values ('Фен', 'Профессиональный', 3);
+insert into products (product, des, category_id) values ('Фен', 'Набор', 3);
+insert into products (product, des, category_id) values ('Стайлер', 'Набор', 3);
+insert into products (product, des, category_id) values ('Смартфон', '4inch', 4);
+insert into products (product, des, category_id) values ('Смартфон', '5inch', 4);
+insert into products (product, des, category_id) values ('Колонка', '3Вт', 4);
+insert into products (product, des, category_id) values ('Колонка', '5Вт', 4);
+insert into products (product, des, category_id) values ('Смарт-часы', 'Резина', 4);
+insert into products (product, des, category_id) values ('Смарт-часы', 'Текстиль', 4);
+insert into products (product, des, category_id) values ('Фотоаппарат', 'Зеркальный', 4);
+insert into products (product, des, category_id) values ('Фотоаппарат', 'Компактный', 4);
+insert into products (product, des, category_id) values ('Пылесос', 'Вертикальный', 1);
+insert into products (product, des, category_id) values ('Пылесос', 'Робот-пылесос', 1);
+insert into products (product, des, category_id) values ('Увлажнитель', 'С очистителем', 1);
+insert into products (product, des, category_id) values ('Обогреватель', 'Радиаторный', 1);
+insert into products (product, des, category_id) values ('Электробритва', 'Роторная', 3);
+insert into products (product, des, category_id) values ('Холодильник', '2 камеры', 2);
+insert into products (product, des, category_id) values ('Холодильник', '1 камера', 2);
+insert into products (product, des, category_id) values ('Стиральная машина', 'Встраиваемая', 2);
+insert into products (product, des, category_id) values ('Стиральная машина', 'Компакт', 1);
+insert into products (product, des, category_id) values ('Духовой шкаф', 'Встраиваемый', 2);
+insert into products (product, des, category_id) values ('Духовой шкаф', 'Переносной', 1);
+insert into products (product, des, category_id) values ('Принтер', 'Струйный', 4);
+insert into products (product, des, category_id) values ('Принтер', 'Лазерный', 4);
+insert into products (product, des, category_id) values ('Принтер', 'МФУ', 4);
+insert into products (product, des, category_id) values ('Тостер', 'Черный', 2);
+insert into products (product, des, category_id) values ('Тостер', 'Белый', 2);
+insert into products (product, des, category_id) values ('Эпилятор', 'Набор', 3);
+insert into products (product, des, category_id) values ('Машинка для стрижки', 'Набор', 3);
+insert into products (product, des, category_id) values ('Мультиварка', 'Белая', 2);
+insert into products (product, des, category_id) values ('ТВ', '4К', 1);
+insert into products (product, des, category_id) values ('Монитор', '20inch', 4);
+insert into products (product, des, category_id) values ('Монитор', '25inch', 4);
+insert into products (product, des, category_id) values ('Планшет', '9inch', 4);
+insert into products (product, des, category_id) values ('Светильник', 'LED', 1);
+insert into products (product, des, category_id) values ('Светильник', '40ВТ', 1);
+insert into products (product, des, category_id) values ('Светильник', '15ВТ', 1);
+insert into products (product, des, category_id) values ('Кондиционер', 'Инвентор', 1);
+insert into products (product, des, category_id) values ('Кондиционер', 'Напольный', 1);
+insert into products (product, des, category_id) values ('Видеокамера', '4К', 4);
+insert into products (product, des, category_id) values ('Видеокамера', 'FullHD', 4);
 
 
 
@@ -88,19 +88,23 @@ insert into brands (brand) values ('Miele');
 insert into brands (brand) values ('Polaris');
 
 
+create table category (category_id number, category_code varchar2(25));
+insert into category values (1, 'Дом');
+insert into category values (2, 'Кухня');
+insert into category values (3, 'Красота');
+insert into category values (4, 'Mobile');
+
+
 --генерируемая таблица товаров
 CREATE TABLE dim_products ( 
     product_id         NUMBER, 
-    category_id        NUMBER, 	
-    category_code      VARCHAR2(25), 
+    category_id        NUMBER,     
     brand              VARCHAR2(30), 
     description        VARCHAR2(100), 
     name               VARCHAR2(50), 
     price              NUMBER,
     last_update_date   DATE
 );
-
--- наполнение таблицы товаров
 declare 
   bins number;
   r    number;
@@ -115,16 +119,16 @@ begin
     end if;
     for i in 1..bins
         loop 
-        insert into dim_products (category_code, description, name, product_id, category_id, brand, price, last_update_date)
-            (select ft.category_code, ft.des, ft.product,
-            (select count(*)+1 from dim_products),
-            (select decode(category_code, 'Дом', 1, 'Кухня', 2, 'Красота', 3, 'Mobile', 4) from dual), 
-            (select brand from 
+        insert into dim_products (description, name, product_id, category_id, brand, price, last_update_date)
+            (select ft.des, ft.product, --description, name
+            (select count(*)+1 from dim_products), --product_id
+            ft.category_id, --category_id
+            (select brand from --brand
             (select brand, dbms_random.value() rnd from brands order by rnd) fetch first 1 rows only),
             round(dbms_random.value(2000, 10000)),
             SYSDATE
         from 
-            (select category_code, product, des, dbms_random.value(1, (select count(*) from products)) rd 
+            (select category_id, product, des, dbms_random.value(1, (select count(*) from products)) rd 
             from products order by rd) ft fetch first 1 rows only
         );
     end loop;

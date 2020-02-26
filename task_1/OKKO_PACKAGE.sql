@@ -3,19 +3,23 @@
    
    Вызов процедур пакета:
    BEGIN
-       okko.FILL_customers (1);  -- добавление в таблицу покупателей 1 записи
-       okko.FILL_products (1);  -- добавление в таблицу продуктов 1 записи
-       okko.FILL_fct_events;  -- добавление записей в таблицу фактов
+       OKKO.FILL_CUSTOMERS(1);         -- добавление в таблицу покупателей 1 записи
+       OKKO.FILL_PRODUCTS(1);          -- добавление в таблицу продуктов 1 записи
+       OKKO.FILL_FCT_PROD;             -- добавление записей в таблицу фактов
+       OKKO.FILL_FCT_PROD_DISCRETE(1); -- добавление 1 записи в таблицу фактов
+       
    END;
 */
 
 
 -- Объявление пакета
 CREATE OR REPLACE PACKAGE OKKO IS
-    PROCEDURE FILL_customers (c_id_end IN NUMBER);
-    PROCEDURE FILL_products (bins IN NUMBER);
-    PROCEDURE FILL_fct_events;
+    PROCEDURE FILL_CUSTOMERS (c_id_end IN NUMBER);
+    PROCEDURE FILL_PRODUCTS (bins IN NUMBER);
+    PROCEDURE FILL_FCT_PROD;
+    PROCEDURE FILL_FCT_PROD_DISCRETE (rdn IN NUMBER);
 END OKKO;
+
 
 -- Создание тела пакета
 CREATE OR REPLACE PACKAGE BODY OKKO IS
@@ -23,16 +27,15 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     ------------------------------------------------------------------------------
     ------------------------- Процедура для записи логов -------------------------
     ------------------------------------------------------------------------------
-    PROCEDURE log_err (PROGRAM_NAME IN VARCHAR2, procedure_name IN VARCHAR2, code IN VARCHAR2, 
-                       error_message IN VARCHAR2, error_position IN VARCHAR2) 
+    PROCEDURE write_log (level_log IN VARCHAR2, program_name IN VARCHAR2, procedure_name IN VARCHAR2,
+                         message IN VARCHAR2) 
     IS
         -- включение автономных транзакций
         PRAGMA AUTONOMOUS_TRANSACTION;
     BEGIN
-        insert into log_error values (PROGRAM_NAME, procedure_name, code, 
-                                      error_message, error_position, systimestamp);
+        insert into log_table values (systimestamp, level_log, program_name, procedure_name, message);
         commit;
-    END log_err;
+    END write_log;
 
 
     ------------------------------------------------------------------------------
@@ -42,7 +45,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
          -- создание массива для хранения городов
         type arr_type_city is table of VARCHAR2(40)
         index by binary_integer;
-        category             VARCHAR2(25);
+        category_id          NUMBER;
         name                 VARCHAR2(40); 
         country              VARCHAR2(40); 
         city                 VARCHAR2(40);
@@ -50,7 +53,8 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         city_index           NUMBER;
         flag                 NUMBER(1);
         procedure_name       VARCHAR2(100) := 'FILL_SUPPLIERS';
-        
+        message              VARCHAR2(1000);
+        i                    NUMBER;
     BEGIN
         cities(1) := 'Москва';
         cities(2) := 'Санкт-Петербург';
@@ -60,65 +64,65 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         cities(6) := 'Тула';
         country := 'Россия';
         -- получение всех доступных кодов категорий
-        for rowCategory in (select distinct category_code from dim_products) loop
+        i := 1;
+        for rowCategory in (select category_id from category) loop
             -- получаем 1, если этот код уже есть в поставщиках, иначе 0
             select case when exists(select * from DIM_SUPPLIERS 
-                                where category = rowCategory.category_code)
+                                    where category = rowCategory.category_id)
                         then 1 
                         else 0
                     end
                 into flag
                 from dual;
-                
             -- если кода нет, добавляем в таблицу
             if flag = 0 then
                 city_index := mod(round(DBMS_RANDOM.VALUE * 100), cities.count) + 1;
-                city := cities(city_index);      
-
-                name := 'OOO '||DBMS_RANDOM.STRING('a', 4);   
-            
-                insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, rowCategory.category_code, 
+                city := cities(city_index);
+                name := 'OOO '||DBMS_RANDOM.STRING('a', 4);
+                insert into DIM_SUPPLIERS values (suppliers_s.NEXTVAL, rowCategory.category_id, 
                                                   name, country, city, sysdate);
             end if;
+            i := i + 1;
         end loop;
         commit;
+        if i > 0 then
+            message := 'Successful writing of '||TO_CHAR(i)||' lines';
+            write_log('INFO', PROGRAM_NAME, procedure_name, message);
+        end if;
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     END FILL_SUPPLIERS;
 
 
-    ------------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     ----------------- Процедура наполнения таблицы DIM_PRODUCTS -----------------
-    ------------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     PROCEDURE FILL_PRODUCTS (bins IN NUMBER) IS
-        -- bins number;
-        r                    NUMBER;
         procedure_name       VARCHAR2(100) := 'FILL_PRODUCTS';
-    begin
-        -- при создании задаем большое число товаров; если таблица существует, объявляем инкремент
-        -- select count(*)+1 into r from dim_products;
-        -- if (r < 11) then
-        --     bins := 10;
-        -- else 
-        --     bins := 2;
-        -- end if;
+        message              VARCHAR2(1000);
+    BEGIN
         for i in 1..bins loop 
-            insert into dim_products (category_code, description, name, product_id, category_id, brand, price, last_update_date)
-                (select ft.category_code, ft.des, ft.product,
-                    (select count(*)+1 from dim_products),
-                    (select decode(category_code, 'Дом', 1, 'Кухня', 2, 'Красота', 3, 'Mobile', 4) from dual), 
-                    (select brand from 
-                        (select brand, dbms_random.value() rnd from brands order by rnd) fetch first 1 rows only),
-                    round(dbms_random.value(2000, 10000)),
-                    SYSDATE
-                from 
-                    (select category_code, product, des, dbms_random.value(1, (select count(*) from products)) rd 
-                    from products order by rd) ft fetch first 1 rows only);
+            insert into dim_products (description, name, product_id, category_id, brand, price, last_update_date)
+                (select ft.des, ft.product, -- description, name
+                (select count(*) + 1 from dim_products), -- product_id
+                ft.category_id, -- category_id
+                (select brand from -- brand
+                (select brand, dbms_random.value() rnd from brands order by rnd) fetch first 1 rows only),
+                round(dbms_random.value(2000, 10000)),
+                SYSDATE
+            from 
+                (select category_id, product, des, dbms_random.value(1, (select count(*) from products)) rd 
+                from products order by rd) ft fetch first 1 rows only
+            );
         end loop;
         commit;
+        message := 'Successful writing of '||TO_CHAR(bins)||' lines';
+        write_log('INFO', PROGRAM_NAME, procedure_name, message);
         FILL_SUPPLIERS;
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     end FILL_PRODUCTS;
 
 
@@ -127,6 +131,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
     ------------------------------------------------------------------------------
     PROCEDURE FILL_CUSTOMERS (c_id_end IN NUMBER) IS
         c_id_st              NUMBER;
+        step                 NUMBER;
         c_country            VARCHAR2(40); 
         c_city               VARCHAR2(40);  
         c_phone              VARCHAR2(40); 
@@ -135,7 +140,8 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         c_mail               VARCHAR2(50);
         c_last_update_date   DATE;
         procedure_name       VARCHAR2(100) := 'FILL_CUSTOMERS';
-    begin
+        message              VARCHAR2(1000);
+    BEGIN
         -- выбираем максимальный итерируемый id    
         select max(customer_id) into c_id_st from dim_customers;
         -- проверяем не пустая ли таблица, что бы не словить null в итератор
@@ -144,9 +150,9 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         end if;
         c_country := 'Россия';
         -- выставляем количество шагов итерации
-        -- c_id_end := c_id_st + 20;
-        -- выполяем итерацию пока
-        while c_id_st <= c_id_end loop
+        step := c_id_end + c_id_st;
+        while c_id_st < step loop
+            c_id_st := c_id_st + 1;
             select decode(abs(mod(DBMS_RANDOM.RANDOM, 5)), 0, 'Мосвка', 1, 'Санкт-Петербург', 2, 'Воронеж', 3, 'Мурманск', 4, 'Волгоград') into c_city from dual;
             select '8-'||decode(abs(mod(DBMS_RANDOM.RANDOM, 3)), 0, '903', 1, '909', '916')||'-'||to_char(mod(abs(DBMS_RANDOM.RANDOM), 8000000)+1000000) into c_phone from dual;
                 if mod(mod(c_id_st, 0), 10) = 0 THEN
@@ -163,51 +169,69 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
             c_id_st := c_id_st + 1;
         end loop;
         commit;
+        message := 'Successful writing of '||TO_CHAR(c_id_end)||' lines';
+        write_log('INFO', PROGRAM_NAME, procedure_name, message);
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
     end FILL_CUSTOMERS;
     
     
-    ------------------------------------------------------------------------------
-    ----------------- Процедура наполнения таблицы FCT_EVENTS -----------------
-    ------------------------------------------------------------------------------
-    PROCEDURE FILL_fct_events IS
-        start_date           NUMBER;
-        end_date             NUMBER;   
+    -----------------------------------------------------------------------------
+    ------------------ Процедура наполнения таблицы FCT_EVENTS ------------------
+    -----------------------------------------------------------------------------
+     PROCEDURE FILL_FCT_PROD IS
         rdn                  NUMBER;
+        -- procedure_name       VARCHAR2(100) := 'FILL_FCT_PROD';
+        -- message              VARCHAR2(1000);
+    BEGIN  
+        rdn := dbms_random.value(5100, 10200); --случайное количество транзакций за 5 мин
+        FILL_FCT_PROD_DISCRETE(rdn)
+    -- EXCEPTION WHEN others THEN
+        -- message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        -- write_log('ERROR', PROGRAM_NAME, procedure_name, message);
+    END FILL_FCT_PROD;
+    
+    
+    ----------------------------------------------------------------------------------------
+    ---------- Процедура наполнения таблицы FCT_EVENTS на указанное число записей ----------
+    ----------------------------------------------------------------------------------------
+    PROCEDURE FILL_FCT_PROD_DISCRETE (rdn IN NUMBER) IS
         prod_id              NUMBER;
-        cat_id               NUMBER;
         cust_id              NUMBER;
-        ev_type              VARCHAR2(20);
-        ev_id                NUMBER;
         temp                 DATE;  
         delta                NUMBER;
-        cc                   VARCHAR2(25);
-        br                   VARCHAR2(25);
-        prc                  NUMBER;
-        procedure_name       VARCHAR2(100) := 'FILL_FCT_EVENTS';
-    begin  
-        rdn := dbms_random.value(5100, 10200); --количество транзакций в сек
-        delta := 5 * 60 / rdn; --среднее время в сек между транзакциями
+        l_col_p              NUMBER;
+        l_col_c              NUMBER;
+        procedure_name       VARCHAR2(100) := 'FILL_FCT_PROD_DISCRETE';
+        message              VARCHAR2(1000);
+    BEGIN  
         select SYSDATE into temp from dual; --инициализация текущего времени;
-        for i in 1..rdn
-        loop
-            select (round(dbms_random.value(1, (select count(*) from dim_products)))) into prod_id from dual;
-            select (round(dbms_random.value(1, (select count(*) from dim_customers)))) into cust_id from dual;
-            select count(*) + 1 into ev_id from fct_EVENTS;
-            select decode(round(dbms_random.value(1, 9)), 1, 'view', 2, 'view', 3, 'view', 4, 'view', 5, 'cart', 6, 'cart', 7, 'cart', 
-                                                          8, 'remove', 9, 'purchase') into ev_type from dual; --вероятность событий                                        
-            select (temp+numToDSInterval(delta, 'second')) into temp from dual; --инкрементация времени          
-            select category_code into cc from dim_products dim_p where dim_p.product_id = prod_id; --category code из dim_products
-            select category_id into cat_id from dim_products dim_p where dim_p.product_id = prod_id;
-            select brand into br from dim_products dim_p where dim_p.product_id = prod_id;--brand из dim_products
-            select price into prc from dim_products dim_p where dim_p.product_id = prod_id;--price из dim_products
-            insert into fct_events (event_time, event_id, event_type, product_id, category_id, customer_id, category_code, brand, price) values
-                                   (temp, ev_id, ev_type, prod_id, cat_id, cust_id, cc, br, prc);          
+        select max(product_id) + 1 into l_col_p from dim_products; --число строк в таблице товаров
+        select max(customer_id) + 1 into l_col_c from dim_customers;--число строк в таблице клиентов    
+        delta := 5 * 60 / rdn; --среднее время в сек между транзакциями     
+        for i in 1..rdn loop
+            select (trunc(dbms_random.value(1, l_col_p))) into prod_id from dual; --trunc вместо round для оптимизации запроса
+            select (trunc(dbms_random.value(1, l_col_c))) into cust_id from dual;       
+            insert into fct_prod (id, event_id, event_time, product_id, customer_id) values
+                    (fct_s.NEXTVAL,  --id события 
+                    decode(trunc(dbms_random.value(1,10)), 1, 1, 2, 1, 3, 1, 4, 1,
+                                                           5, 2, 6, 2, 7, 2,
+                                                           8, 3,
+                                                           9, 4), --вероятность событий
+                    temp,           
+                    trunc(dbms_random.value(1, l_col_p)), -- product_id
+                    trunc(dbms_random.value(1, l_col_c))  -- product_id
+                    );
+            temp := temp + numToDSInterval(delta, 'second');  --инкрементация текущего времени;        
         end loop;      
         commit;
+        message := 'Successful writing of '||TO_CHAR(rdn)||' lines';
+        write_log('INFO', PROGRAM_NAME, procedure_name, message);
     EXCEPTION WHEN others THEN
-        log_err(PROGRAM_NAME, procedure_name, TO_CHAR(sqlcode), sqlerrm, dbms_utility.format_error_backtrace);
-    end FILL_fct_events;
+        message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+        write_log('ERROR', PROGRAM_NAME, procedure_name, message);
+    END FILL_FCT_PROD_DISCRETE;
 
 END OKKO;
+

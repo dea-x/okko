@@ -61,9 +61,10 @@ if __name__ == '__main__':
         .option("user", "test_user") \
         .option("password", "test_user") \
         .load()
-
+    
     maxID = df1.agg({'last_update_date': 'max'}).collect()[0][0]
     if maxID == None:
-        maxID = 0
-    dfResult = df0.where(sf.col('last_update_date') > maxID).collect()
+        dfResult = df0.collect()
+    else:
+        dfResult = df0.where(sf.col('last_update_date') > maxID).collect()
     producer_to_Kafka(dfResult)
