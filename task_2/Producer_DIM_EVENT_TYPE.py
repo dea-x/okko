@@ -103,7 +103,7 @@ def main():
         start_offset = get_offset()
         df_source, df_target = connection_to_bases()
         max_id = next(df_target.agg({"event_id ": "max"}).toLocalIterator())[0]
-        # max_id = 0 if max_id is None else max_id
+        max_id = 0 if max_id is None else max_id
         df_result = df_source.where(sf.col("event_id") > max_id)
         # Sending dataframe to Kafka
         df_result.foreachPartition(send_to_Kafka)
