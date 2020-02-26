@@ -104,11 +104,11 @@ def save_data(rdd):
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
                 
-            write_log('INFO', TARGET_DB_TABLE_NAME, 'main', '{} rows inserted successfully'.format(count))
+            write_log('INFO', 'Consumer_fct_prod.py', 'main', '{} rows inserted successfully'.format(count))
 
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
-            write_log('ERROR', TARGET_DB_TABLE_NAME, 'main', str(e)[:1000])
+            write_log('ERROR', 'Consumer_fct_prod.py', 'main', str(e)[:1000])
             flag = True
     else:
         ssc.stop()

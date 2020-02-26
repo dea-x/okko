@@ -1,6 +1,8 @@
 from pyspark.shell import spark, sc, sqlContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
+from collections import namedtuple
+import datetime
 import json
 import time
 
@@ -79,11 +81,11 @@ def save_data(rdd):
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
                 
-            write_log('INFO', TARGET_DB_TABLE_NAME, 'main', '{} rows inserted successfully'.format(count))
+            write_log('INFO', 'Consumer_category.py', 'main', '{} rows inserted successfully'.format(count))
 
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
-            write_log('ERROR', TARGET_DB_TABLE_NAME, 'main', str(e)[:1000])
+            write_log('ERROR', 'Consumer_category.py', 'main', str(e)[:1000])
             flag = True
     else:
         ssc.stop()
