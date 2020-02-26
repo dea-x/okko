@@ -1,73 +1,108 @@
+import json
+from collections import namedtuple
+import datetime
+import os
+
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
 from kafka import KafkaProducer
-import json
+
+# CONSTANTS
+# Topic name
+TOPIC = 'dim_customers'
+# Parameters of database source
+DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
+                   'user': 'test_user',
+                   'password': 'test_user'}
+# Parameters of database destination
+DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
+                   'user': 'test_user',
+                   'password': 'test_user'}
+SERVER_ADDRESS = "cdh631.itfbgroup.local:9092"
+# program name
+SCRIPT_NAME = os.path.basename(__file__)
 
 
 def serializer():
+    """ Function for serialization """
     return str.encode
 
 
-# Serialization in JSON
-def build_JSON(customer_id, country, city, phone, first_name, last_name, mail, last_update_date):
-    data = dict(customer_id=customer_id, country=country, city=city, phone=phone, first_name=first_name,
-                last_name=last_name, mail=mail, last_update_date=last_update_date)
-    return json.dumps(data)
-
-
-# The implementation of the producer
-def producer_to_Kafka(dfResult):
-    producer = KafkaProducer(bootstrap_servers=['cdh631.itfbgroup.local:9092'],
-                             value_serializer=serializer())
-
-    for i in range(len(dfResult)):
+def send_to_Kafka(rows):
+    """ Function for sending data in Kafka """
+    producer = KafkaProducer(bootstrap_servers=[SERVER_ADDRESS], value_serializer=serializer())
+    for row in rows:
         try:
-            customer_id = int(dfResult[i]['CUSTOMER_ID'])
-            country = dfResult[i]['COUNTRY']
-            city = dfResult[i]['CITY']
-            phone = dfResult[i]['PHONE']
-            first_name = dfResult[i]['FIRST_NAME']
-            last_name = dfResult[i]['LAST_NAME']
-            mail = dfResult[i]['MAIL']
-            last_update_date = str(dfResult[i]['LAST_UPDATE_DATE'])
-
-            values = build_JSON(customer_id, country, city, phone, first_name, last_name, mail, last_update_date)
-            print(values)
-            future = producer.send(TOPIC, key=str('dim_customers'), value=values)
-
-        except Exception as e:
-            print('--> It seems an Error occurred: {}'.format(e))
-
+            producer.send(TOPIC, key=TOPIC, value=json.dumps(row.asDict(), default=str))
+        except Exception:
+            # print('--> It seems an Error occurred: {}'.format(e))
+            # write_log("ERROR", SCRIPT_NAME, "send_to_Kafka", str(err))
+            pass
     producer.flush()
 
 
-if __name__ == '__main__':
-    TOPIC = 'dim_customers'
-
-    # Creating a dataframe for the source table
-    df0 = spark.read \
-        .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.252:1521:oradb") \
-        .option("dbtable", "dim_customers") \
-        .option("user", "test_user") \
-        .option("password", "test_user") \
+def connection_to_bases():
+    """ Getting DataFrame from DB """
+    # creating a dataframe for the source table
+    df_source = spark.read \
+        .format('jdbc') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', DATABASE_SOURCE['url']) \
+        .option('dbtable', "dim_suppliers") \
+        .option('user', DATABASE_SOURCE['user']) \
+        .option('password', DATABASE_SOURCE['password']) \
         .load()
 
-    # Creating a dataframe for the recipient table
-    df1 = spark.read \
-        .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@192.168.88.95:1521:orcl") \
-        .option("dbtable", "DIM_CUSTOMERS") \
-        .option("user", "test_user") \
-        .option("password", "test_user") \
+    # creating a dataframe for the target table
+    df_target = spark.read \
+        .format('jdbc') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', DATABASE_TARGET['url']) \
+        .option('dbtable', "dim_suppliers".upper()) \
+        .option('user', DATABASE_TARGET['user']) \
+        .option('password', DATABASE_TARGET['password']) \
         .load()
+    return df_source, df_target
 
-    maxID = df1.agg({'last_update_date': 'max'}).collect()[0][0]
-    if maxID == None:
-        dfResult = df0.collect()
-    else:
-        dfResult = df0.where(sf.col('last_update_date') > maxID).collect()
-    producer_to_Kafka(dfResult)
-    
+
+def write_log(level_log: str, program_name: str, procedure_name: str, message: str) -> None:
+    """ Function for writing log
+
+    :param level_log: level of logging, can be one of ["INFO", "WARN", "ERROR"];
+    :param program_name: script's name;
+    :param procedure_name: function's name;
+    :param message: description of the recording.
+    """
+    log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
+    data = log_row(datetime.datetime.today(), level_log, program_name, procedure_name, message)
+    result = spark.createDataFrame([data])
+    result.write \
+        .format("jdbc") \
+        .mode("append") \
+        .option("driver", 'oracle.jdbc.OracleDriver') \
+        .option("url", DATABASE_SOURCE['url']) \
+        .option("dbtable", 'log_table') \
+        .option("user", DATABASE_SOURCE['user']) \
+        .option("password", DATABASE_SOURCE['password']) \
+        .save()
+
+
+def main():
+    try:
+        df_source, df_target = connection_to_bases()
+        last_date = next(df_target.agg({"last_update_date": "max"}).toLocalIterator())[0]
+        # last_date = datetime.datetime(2000, 1, 1, 0, 0, 0) if last_date is None else last_date
+        if last_date is None:
+            df_result = df_source
+        else:
+            df_result = df_source.where(sf.col("last_update_date") > last_date)
+        # Sending dataframe to Kafka
+        df_result.foreachPartition(send_to_Kafka)
+        # Writing log
+        count = df_result.count()
+        write_log("INFO", SCRIPT_NAME, "main", "Successful sending of {0} lines".format(count))
+    except Exception as err:
+        write_log("ERROR", SCRIPT_NAME, "main", str(err)[:1000])
+
+
+main()
