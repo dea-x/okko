@@ -1,6 +1,8 @@
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
 from kafka import KafkaProducer
+from collections import namedtuple
+import datetime
 import json
 
 # Topic name
@@ -11,10 +13,10 @@ DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'password': 'test_user',
                    'table': 'fct_events'}
 # Parameters of database destination
-DATABASE_DESTINATION = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
-                        'user': 'test_user',
-                        'password': 'test_user',
-                        'table': 'fct_events'}
+DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
+                   'user': 'test_user',
+                   'password': 'test_user',
+                   'table': 'fct_events'}
 
 
 def serializer():
@@ -29,7 +31,7 @@ def send_to_Kafka(rows):
         try:
             producer.send(TOPIC, key=str('fct_events'), value=json.dumps(row.asDict(), default=str))
         except Exception as e:
-            print('--> It seems an Error occurred: {}'.format(e))
+            write_log('ERROR', 'Producer_FCT_EVENTS', 'send_to_Kafka', str(e))
     producer.flush()
 
 
@@ -48,12 +50,27 @@ def connection_to_bases():
     df_target = spark.read \
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
-        .option('url', DATABASE_DESTINATION['url']) \
-        .option('dbtable', DATABASE_DESTINATION['table'].upper()) \
-        .option('user', DATABASE_DESTINATION['user']) \
-        .option('password', DATABASE_DESTINATION['password']) \
+        .option('url', DATABASE_TARGET['url']) \
+        .option('dbtable', DATABASE_TARGET['table'].upper()) \
+        .option('user', DATABASE_TARGET['user']) \
+        .option('password', DATABASE_TARGET['password']) \
         .load()
     return df_source, df_target
+
+
+def write_log(level_log, program_name, procedure_name, message):
+    log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
+    data = log_row(datetime.datetime.today(), level_log, program_name, procedure_name, message)
+    result = spark.createDataFrame([data])
+    result.write \
+        .format("jdbc") \
+        .mode("append") \
+        .option("driver", 'oracle.jdbc.OracleDriver') \
+        .option("url", DATABASE_SOURCE['url']) \
+        .option("dbtable", 'log_table') \
+        .option("user", DATABASE_SOURCE['user']) \
+        .option("password", DATABASE_SOURCE['password']) \
+        .save()
 
 
 def main():
@@ -67,9 +84,10 @@ def main():
         dfResult = df_source.where((sf.col('event_id') > maxID) & (sf.col('event_id') < maxID + 1000000))
         # Sending dataframe to Kafka
         dfResult.foreachPartition(send_to_Kafka)
-
+        # Write to logs
+        write_log('INFO', 'Producer_FCT_EVENTS', 'main', str(e))
     except Exception as e:
-        print('--> It seems an Error occurred: {}'.format(e))
+        write_log('ERROR', 'Producer_FCT_EVENTS', 'main', str(e))
 
 
 main()
