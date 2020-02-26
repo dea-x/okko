@@ -23,7 +23,7 @@ TARGET_DB_USER_PASSWORD = "test_user"
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
     data = json.loads(line)
-    return data['suppliers_id'], data['category'], data['name'], data['country'], data['city'], data['last_update_date']
+    return data['SUPPLIERS_ID'], data['CATEGORY_ID'], data['NAME'], data['COUNTRY'], data['CITY'], data['LAST_UPDATE_DATE']
     
 def deserializer():
     """ Deserializer messages from Kafka Producer """
@@ -38,10 +38,27 @@ def save_data(rdd):
     global flag
     flag = False
     if not rdd.isEmpty():
+        # Create df for duplicate handling
+        df_max_id = spark.read \
+            .format("jdbc") \
+            .option("driver", 'oracle.jdbc.OracleDriver') \
+            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+            .option("dbtable", TARGET_DB_TABLE_NAME) \
+            .option("user", TARGET_DB_USER_NAME) \
+            .option("password", TARGET_DB_USER_PASSWORD) \
+            .load()
+        
+        max_id = df_max_id.agg({'suppliers_id': 'max'}).collect()[0][0]
+        if max_id == None:
+            max_id = 0      
+            
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
-        result = spark.sql("select _1 as suppliers_id,_2 as category,_3 as name,_4 as country,_5 as city,to_timestamp(_6) as last_update_date from t")
+        result = spark.sql('''select suppliers_id, category_id, name, country, city, last_update_date 
+            from (select row_number() over (partition by _1 order by _6) as RN,_1 as suppliers_id,_2 as category_id,_3 as name,
+            _4 as country,_5 as city,to_timestamp(_6) as last_update_date from t where _1 > ''' + str(max_id) + ''')
+			where RN = 1''')
 
         
         try:
@@ -62,8 +79,8 @@ def save_data(rdd):
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
-        except Exception:
-            print("Exception!\n")
+        except Exception as e:
+            print('--> It seems an Error occurred: {}'.format(e))
             flag = True
     else:
         ssc.stop()

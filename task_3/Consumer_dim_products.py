@@ -22,7 +22,7 @@ TARGET_DB_USER_PASSWORD = "test_user"
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
     data = json.loads(line)
-    return data['product_id'], data['category_id'], data['category_code'], data['brand'], data['description'], data['name'], data['price'], data['last_update_date']
+    return data['PRODUCT_ID'], data['CATEGORY_ID'], data['BRAND'], data['DESCRIPTION'], data['NAME'], data['PRICE'], data['LAST_UPDATE_DATE']
     
 def deserializer():
     """ Deserializer messages from Kafka Producer """
@@ -37,10 +37,29 @@ def save_data(rdd):
     Writing DataFrame to HDFS and Oracle DB
     """
     if not rdd.isEmpty():
+        # Create df for duplicate handling
+        df_max_id = spark.read \
+            .format("jdbc") \
+            .option("driver", 'oracle.jdbc.OracleDriver') \
+            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+            .option("dbtable", TARGET_DB_TABLE_NAME) \
+            .option("user", TARGET_DB_USER_NAME) \
+            .option("password", TARGET_DB_USER_PASSWORD) \
+            .load()
+        
+        max_id = df_max_id.agg({'product_id': 'max'}).collect()[0][0]
+        if max_id == None:
+            max_id = 0 
+            
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
-        result = spark.sql("select _1 as product_id,_2 as category_id,_3 as category_code,_4 as brand,_5 as description,_6 as name,_7 as price,to_timestamp(_8) as last_update_date from t")
+        result = spark.sql(
+        '''select product_id, category_id, brand, description, name, price, last_update_date
+            from (select row_number() over (partition by _1 order by _7) as RN,_1 as product_id,_2 as category_id,
+            _3 as brand,_4 as description,_5 as name,_6 as price,to_timestamp(_7) as last_update_date
+             from t where _1 > ''' + str(max_id) + ''')
+            where RN = 1''')
 
         try:
             # Writing to HDFS
