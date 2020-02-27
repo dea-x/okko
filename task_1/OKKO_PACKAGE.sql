@@ -214,7 +214,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
             select (trunc(dbms_random.value(1, l_col_p))) into prod_id from dual; --trunc вместо round для оптимизации запроса
             select (trunc(dbms_random.value(1, l_col_c))) into cust_id from dual;       
             insert into fct_prod (id, event_id, event_time, product_id, customer_id) values
-                    (fct_s.NEXTVAL,  --id события 
+                    (fct_s_prod.NEXTVAL,  --id события
                     decode(trunc(dbms_random.value(1,10)), 1, 1, 2, 1, 3, 1, 4, 1,
                                                            5, 2, 6, 2, 7, 2,
                                                            8, 3,
