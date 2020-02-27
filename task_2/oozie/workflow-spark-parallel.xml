@@ -5,6 +5,8 @@
       <path start="spark-process_2"/>
       <path start="spark-process_3"/>
       <path start="spark-process_4"/>
+      <path start="spark-process_5"/>
+      <path start="spark-process_6"/>
     </fork>
     <action name='spark-process_1'>
         <spark xmlns="uri:oozie:spark-action:0.1">
@@ -13,8 +15,8 @@
             <master>${master}</master>
             <mode>${mode}</mode>
             <name>${child_app}</name>
-            <class>Producer_DIM_CUSTOMERS</class>
-            <jar>${PythonPath}/Producer_DIM_CUSTOMERS.py</jar>
+            <class>Producer_DIM_CATEGORY</class>
+            <jar>${PythonPath}/Producer_DIM_CATEGORY.py</jar>
              <spark-opts>
              </spark-opts>
         </spark>
@@ -28,8 +30,8 @@
             <master>${master}</master>
             <mode>${mode}</mode>
             <name>${child_app}</name>
-            <class>Producer_DIM_PRODUCTS</class>
-            <jar>${PythonPath}/Producer_DIM_PRODUCTS.py</jar>
+            <class>Producer_DIM_CUSTOMERS</class>
+            <jar>${PythonPath}/Producer_DIM_CUSTOMERS.py</jar>
              <spark-opts>
              </spark-opts>
         </spark>
@@ -37,6 +39,36 @@
         <error to="kill" />
      </action>
      <action name='spark-process_3'>
+        <spark xmlns="uri:oozie:spark-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <master>${master}</master>
+            <mode>${mode}</mode>
+            <name>${child_app}</name>
+            <class>Producer_DIM_EVENT_TYPE</class>
+            <jar>${PythonPath}/Producer_DIM_EVENT_TYPE.py</jar>
+             <spark-opts>
+             </spark-opts>
+        </spark>
+        <ok to="joining" />
+        <error to="kill" />
+    </action>
+     <action name='spark-process_4'>
+        <spark xmlns="uri:oozie:spark-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <master>${master}</master>
+            <mode>${mode}</mode>
+            <name>${child_app}</name>
+            <class>Producer_PRODUCTS</class>
+            <jar>${PythonPath}/Producer_PRODUCTS.py</jar>
+             <spark-opts>
+             </spark-opts>
+        </spark>
+        <ok to="joining" />
+        <error to="kill" />
+    </action>
+    <action name='spark-process_5'>
         <spark xmlns="uri:oozie:spark-action:0.1">
             <job-tracker>${jobTracker}</job-tracker>
             <name-node>${nameNode}</name-node>
@@ -51,15 +83,15 @@
         <ok to="joining" />
         <error to="kill" />
     </action>
-     <action name='spark-process_4'>
+    <action name='spark-process_6'>
         <spark xmlns="uri:oozie:spark-action:0.1">
             <job-tracker>${jobTracker}</job-tracker>
             <name-node>${nameNode}</name-node>
             <master>${master}</master>
             <mode>${mode}</mode>
             <name>${child_app}</name>
-            <class>Producer_FCT_EVENTS</class>
-            <jar>${PythonPath}/Producer_FCT_EVENTS.py</jar>
+            <class>Producer_FCT_PROD</class>
+            <jar>${PythonPath}/Producer_FCT_PROD.py</jar>
              <spark-opts>
              </spark-opts>
         </spark>
