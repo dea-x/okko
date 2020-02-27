@@ -62,7 +62,9 @@ def save_data(rdd):
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
-        result = spark.sql("select distinct _1 as event_id,_2 as event_type from t")
+        result = spark.sql('''select event_id, event_type from (select row_number() over (partition by _1 order by _2) as RN,
+			_1 as event_id,_2 as event_type from t)
+			   where RN = 1''')
 
         count = result.count()
 

@@ -11,6 +11,6 @@ SELECT to_char(f.event_time, 'yyyy-mm-dd') day, SUM(p.price) sold,  to_char(even
        DIM_PRODUCTS p
   WHERE f.event_id = 4 and f.product_id = p.product_id
   GROUP BY to_char(f.event_time, 'yyyy-mm-dd'), to_char(event_time, 'yyyy'), to_char(event_time, 'IW'), to_char (event_time, 'MONTH'), to_char(event_time, 'yyyy-Q');
---DROP MATERIALIZED VIEW LOG ON FCT_PROD WITH ROWID, SEQUENCE (event_time, event_id, product_id), PRIMARY KEY INCLUDING NEW VALUES;
---DROP MATERIALIZED VIEW LOG ON DIM_PRODUCTS WITH ROWID, SEQUENCE (product_id, price) INCLUDING NEW VALUES;
+--DROP MATERIALIZED VIEW LOG ON FCT_PROD;
+--DROP MATERIALIZED VIEW LOG ON DIM_PRODUCTS;
 --DROP MATERIALIZED VIEW SumPerDay
