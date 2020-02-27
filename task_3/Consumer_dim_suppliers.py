@@ -27,7 +27,7 @@ LOG_TABLE_NAME = "log_table"
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
     data = json.loads(line)
-    return data['SUPPLIERS_ID'], data['CATEGORY_ID'], data['NAME'], data['COUNTRY'], data['CITY'], data[
+    return data['SUPPLIERS_ID'], data['CATEGORY'], data['NAME'], data['COUNTRY'], data['CITY'], data[
         'LAST_UPDATE_DATE']
 
 
@@ -77,8 +77,8 @@ def save_data(rdd):
         rdd = rdd.map(lambda m: parse(m[1]))
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
-        result = spark.sql('''select suppliers_id, category_id, name, country, city, last_update_date 
-            from (select row_number() over (partition by _1 order by _6) as RN,_1 as suppliers_id,_2 as category_id,_3 as name,
+        result = spark.sql('''select suppliers_id, category, name, country, city, last_update_date 
+            from (select row_number() over (partition by _1 order by _6) as RN,_1 as suppliers_id,_2 as category,_3 as name,
             _4 as country,_5 as city,to_timestamp(_6) as last_update_date from t where _1 > ''' + str(max_id) + ''')
 			where RN = 1''')
 
