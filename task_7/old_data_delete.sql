@@ -5,6 +5,13 @@ AS
     avg_date FCT_PROD.EVENT_TIME%TYPE;
     f_date FCT_PROD.EVENT_TIME%TYPE;
     l_date FCT_PROD.EVENT_TIME%TYPE;
+    VAR1 number;
+    VAR2 number;
+    VAR3 number;
+    VAR4 number;
+    VAR5 number;
+    VAR6 number;
+    VAR7 number;
 BEGIN
    select count(*) into row_count from FCT_PROD;
    if row_count > 1000000 then 
@@ -13,15 +20,18 @@ BEGIN
        avg_date := f_date + (l_date - f_date)/2;
        select sum(sold) into procceds from SumPerDay
        where day between f_date and avg_date;
-       insert into OLD_DATA_PROD values(d1, avg_date ,procceds);
        DELETE FCT_PROD where EVENT_TIME < avg_date; 
-       EXECUTE IMMEDIATE 'alter table FCT_PROD deallocate unused';
-	   EXECUTE IMMEDIATE 'alter index FCT_PROD deallocate unused';
+       SYS.dbms_space.unused_space('TEST_USER','FCT_PROD','TABLE',VAR1,VAR2,VAR3,VAR4,VAR5,VAR6,VAR7);
+       EXECUTE IMMEDIATE 'insert into OLD_DATA_PROD values(d1, avg_date ,procceds)';
+       EXECUTE IMMEDIATE 'ALTER TABLE MILLER.CUSTOMERS DEALLOCATE UNUSED KEEP VAR3';
+--     EXECUTE IMMEDIATE 'alter table FCT_PROD deallocate unused';
+--	   EXECUTE IMMEDIATE 'alter index FCT_PROD deallocate unused';
    end if; 
   COMMIT;
    EXCEPTION WHEN others THEN
    NULL;
 END; 
+/
 
 BEGIN
 DBMS_SCHEDULER.CREATE_SCHEDULE
