@@ -8,10 +8,10 @@ import json
 # Topic name
 TOPIC = 'category'
 # Parameters of database source
-DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
+DATABASE_SOURCE = {'url': 'jdbc:oracle:thin:@192.168.88.102:1521:orcl',
                    'user': 'test_user',
-                   'password': 'test_user',
-                   'table': 'category'}
+                   'password': '1234',
+                   'table': 'fct_prod'}
 # Parameters of database destination
 DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
                    'user': 'test_user',
