@@ -84,7 +84,7 @@ def write_log(level_log, program_name, procedure_name, message):
 
 
 def get_offset():
-    ''' Function to receive current offset '''
+    """ Function to receive current offset """
     consumer = KafkaConsumer(TOPIC, bootstrap_servers=[SERVER_ADDRESS])
     # get partition
     # part = consumer.partitions_for_topic(TOPIC)

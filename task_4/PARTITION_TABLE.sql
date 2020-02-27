@@ -6,19 +6,17 @@ EXCEPTION
         NULL;
 END;
 
+
+
 -- Создание таблицы с партицированием по месяцам
-CREATE TABLE FCT_EVENTS_part(
-    event_time         DATE,
-    event_type         VARCHAR2(20),
-    event_id           NUMBER,
-    product_id         NUMBER,
-    category_id        NUMBER,
-    category_code      VARCHAR2(25),
-    brand              VARCHAR2(30),
-    price              NUMBER,
-    customer_id        NUMBER,
+CREATE TABLE FCT_PROD_PART (
+    id           NUMBER,
+    event_id     NUMBER,
+    event_time   DATE,
+    product_id   NUMBER,
+    customer_id  NUMBER,
     -- mounth GENERATED ALWAYS AS (TO_CHAR(event_time, 'mm')) VIRTUAL, -- виртуальный столбец
-    CONSTRAINT FCT_EVENTS_part_pk PRIMARY KEY (event_id)
+    CONSTRAINT id_pk PRIMARY KEY (id)
 )
 PARTITION BY RANGE(event_time)(
     PARTITION MAR values less than (to_date('01.04.2019','DD.MM.YYYY')),
@@ -41,15 +39,11 @@ PARTITION BY RANGE(event_time)(
 -- Разбиение по хешу будет более равномерно. Так будет лучше видно влияние на время обработки запроса.
 /*
 CREATE TABLE FCT_EVENTS_part(
-    event_time DATE,
-    event_type VARCHAR2(20),
-    event_id NUMBER,
-    product_id NUMBER,
-    category_id NUMBER,
-    category_code VARCHAR2(25),
-    brand VARCHAR2(30),
-    price NUMBER,
-    customer_id NUMBER,
+    id           NUMBER,
+    event_id     NUMBER,
+    event_time   DATE,
+    product_id   NUMBER,
+    customer_id  NUMBER,
     mounth GENERATED ALWAYS AS (TO_CHAR(event_time, 'mm')) VIRTUAL, -- виртуальный столбец
     CONSTRAINT FCT_EVENTS_part_pk PRIMARY KEY (event_id)
 )
@@ -76,7 +70,7 @@ SELECT * FROM FCT_EVENTS
 --     VIRTUAL_COLUMN,
 --     DATA_DEFAULT
 -- FROM ALL_TAB_COLS
--- WHERE TABLE_NAME = 'FCT_EVENTS_PART';
+-- WHERE TABLE_NAME = 'FCT_PROD_PART';
 
 -- Просмотр допустимых tablespace
 -- SELECT TABLESPACE_NAME FROM dba_tablespaces;
@@ -88,4 +82,4 @@ SELECT * FROM FCT_EVENTS
 --     high_value,
 --     tablespace_name
 -- FROM user_tab_partitions
--- WHERE table_name = 'FCT_EVENTS_PART'
+-- WHERE table_name = 'FCT_PROD_PART'
