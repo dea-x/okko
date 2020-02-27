@@ -1,6 +1,6 @@
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 from collections import namedtuple
 import datetime
 import json
@@ -78,9 +78,8 @@ def get_offset():
     ''' Function to receive current offset '''
     consumer = KafkaConsumer(TOPIC, bootstrap_servers=[SERVER_ADDRESS])
     # get partition
-    part = consumer.partitions_for_topic(TOPIC)
-    part = part.pop()
-    tp = TopicPartition(TOPIC, part)
+    # part = consumer.partitions_for_topic(TOPIC)
+    tp = TopicPartition(TOPIC, 0)
     consumer.topics()
     return consumer.position(tp)
 

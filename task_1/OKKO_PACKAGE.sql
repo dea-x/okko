@@ -68,7 +68,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         for rowCategory in (select category_id from category) loop
             -- получаем 1, если этот код уже есть в поставщиках, иначе 0
             select case when exists(select * from DIM_SUPPLIERS 
-                                    where category = rowCategory.category_id)
+                                    where category_id = rowCategory.category_id)
                         then 1 
                         else 0
                     end
@@ -186,7 +186,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
         -- message              VARCHAR2(1000);
     BEGIN  
         rdn := dbms_random.value(5100, 10200); --случайное количество транзакций за 5 мин
-        FILL_FCT_PROD_DISCRETE(rdn)
+        FILL_FCT_PROD_DISCRETE(rdn);
     -- EXCEPTION WHEN others THEN
         -- message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
         -- write_log('ERROR', PROGRAM_NAME, procedure_name, message);
@@ -214,7 +214,7 @@ CREATE OR REPLACE PACKAGE BODY OKKO IS
             select (trunc(dbms_random.value(1, l_col_p))) into prod_id from dual; --trunc вместо round для оптимизации запроса
             select (trunc(dbms_random.value(1, l_col_c))) into cust_id from dual;       
             insert into fct_prod (id, event_id, event_time, product_id, customer_id) values
-                    (fct_s.NEXTVAL,  --id события 
+                    (fct_s_prod.NEXTVAL,  --id события
                     decode(trunc(dbms_random.value(1,10)), 1, 1, 2, 1, 3, 1, 4, 1,
                                                            5, 2, 6, 2, 7, 2,
                                                            8, 3,

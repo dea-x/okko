@@ -1,10 +1,11 @@
 from pyspark.shell import spark, sc, sqlContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
+from collections import namedtuple
+import datetime
 import json
 import time
 
-START = 0
 PARTITION = 0
 TOPIC = "dim_customers"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
@@ -19,6 +20,8 @@ OFFSET_TABLE_NAME = "OFFSET_DIM_CUSTOMERS"
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
 
+URL_LOG_TABLE = "jdbc:oracle:thin:@192.168.88.252:1521:oradb"
+LOG_TABLE_NAME = "log_table"
 
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
@@ -28,6 +31,20 @@ def parse(line):
 def deserializer():
     """ Deserializer messages from Kafka Producer """
     return bytes.decode
+
+def write_log(level_log, program_name, procedure_name, message):
+    log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
+    data = log_row(datetime.datetime.today(), level_log, program_name, procedure_name, message)
+    result = spark.createDataFrame([data])
+    result.write \
+        .format('jdbc') \
+        .mode('append') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', URL_LOG_TABLE) \
+        .option('dbtable', LOG_TABLE_NAME) \
+        .option('user', TARGET_DB_USER_NAME) \
+        .option('password', TARGET_DB_USER_PASSWORD) \
+        .save()
 
 def save_data(rdd):
     global flag
@@ -48,7 +65,7 @@ def save_data(rdd):
             .option("password", TARGET_DB_USER_PASSWORD) \
             .load()
         
-        max_id = df_max_id.agg({'product_id': 'max'}).collect()[0][0]
+        max_id = df_max_id.agg({'customer_id': 'max'}).collect()[0][0]
         if max_id == None:
             max_id = 0 
             
@@ -60,7 +77,8 @@ def save_data(rdd):
             _4 as phone,_5 as first_name,_6 as last_name,_7 as mail,to_timestamp(_8) as last_update_date 
             from t where _1 > ''' + str(max_id) + ''')
             where RN = 1''')
-
+            
+        count = result.count()
         
         try:
             # Writing to HDFS
@@ -80,8 +98,12 @@ def save_data(rdd):
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
+                
+            write_log('INFO', 'Consumer_dim_customers.py', 'main', '{} rows inserted successfully'.format(count))
+
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
+            write_log('ERROR', 'Consumer_dim_customers.py', 'main', str(e)[:1000])
             flag = True
     else:
         ssc.stop()

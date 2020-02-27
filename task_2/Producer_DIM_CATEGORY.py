@@ -1,22 +1,22 @@
 from pyspark.shell import spark
 import pyspark.sql.functions as sf
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 from collections import namedtuple
 import datetime
 import json
 
 # Topic name
-TOPIC = 'dim_category'
+TOPIC = 'category'
 # Parameters of database source
 DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
                    'user': 'test_user',
                    'password': 'test_user',
-                   'table': 'dim_category'}
+                   'table': 'category'}
 # Parameters of database destination
 DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
                    'user': 'test_user',
                    'password': 'test_user',
-                   'table': 'DIM_CATEGORY'}
+                   'table': 'CATEGORY'}
 SERVER_ADDRESS = 'cdh631.itfbgroup.local:9092'
 
 
@@ -29,7 +29,7 @@ def send_to_Kafka(rows):
     producer = KafkaProducer(bootstrap_servers=[SERVER_ADDRESS], value_serializer=serializer())
     for row in rows:
         try:
-            producer.send(TOPIC, key=str('dim_category'), value=json.dumps(row.asDict(), default=str))
+            producer.send(TOPIC, key=str('category'), value=json.dumps(row.asDict(), default=str))
         except Exception as e:
             # write_log('ERROR', 'Producer_DIM_CATEGORY', 'send_to_Kafka', str(e)[:1000])
             pass
@@ -103,9 +103,9 @@ def main():
         end_offset = get_offset()
         count = end_offset - start_offset  # = df_result.count()
         # Write to logs
-        write_log('INFO', 'Producer_DIM_CATEGORY.py', 'main', "Successful sending of {0} lines".format(count))
+        write_log('INFO', 'Producer_CATEGORY.py', 'main', "Successful sending of {0} lines".format(count))
     except Exception as e:
-        write_log('ERROR', 'Producer_DIM_CATEGORY.py', 'main', str(e)[:1000])
+        write_log('ERROR', 'Producer_CATEGORY.py', 'main', str(e)[:1000])
 
 
 main()

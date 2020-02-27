@@ -1,17 +1,22 @@
 from pyspark.shell import spark, sc, sqlContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils, TopicAndPartition
+from collections import namedtuple
+import datetime
 import json
 import time
 
 PARTITION = 0
-TOPIC = "fct_events"
+TOPIC = "fct_prod"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
 HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/fct_prod"
 
 HOST_IP = "192.168.88.95"
 PORT = "1521"
 SID = "orcl"
+
+URL_LOG_TABLE = "jdbc:oracle:thin:@192.168.88.252:1521:oradb"
+LOG_TABLE_NAME = "log_table"
 
 TARGET_DB_TABLE_NAME = "FCT_PROD"
 OFFSET_TABLE_NAME = "OFFSET_FCT_PROD"
@@ -29,6 +34,20 @@ def parse(line):
 def deserializer():
     """ Deserializer messages from Kafka Producer """
     return bytes.decode
+
+def write_log(level_log, program_name, procedure_name, message):
+    log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
+    data = log_row(datetime.datetime.today(), level_log, program_name, procedure_name, message)
+    result = spark.createDataFrame([data])
+    result.write \
+        .format('jdbc') \
+        .mode('append') \
+        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('url', URL_LOG_TABLE) \
+        .option('dbtable', LOG_TABLE_NAME) \
+        .option('user', TARGET_DB_USER_NAME) \
+        .option('password', TARGET_DB_USER_PASSWORD) \
+        .save()
 
 
 def save_data(rdd):
@@ -64,6 +83,8 @@ def save_data(rdd):
                     from t where _1 > ''' + str(max_id) + ''')
         where RN = 1''')
         
+        count = result.count()
+        
         try:
             # Writing to HDFS
             result.write \
@@ -82,8 +103,12 @@ def save_data(rdd):
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
+                
+            write_log('INFO', 'Consumer_fct_prod.py', 'main', '{} rows inserted successfully'.format(count))
+
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
+            write_log('ERROR', 'Consumer_fct_prod.py', 'main', str(e)[:1000])
             flag = True
     else:
         ssc.stop()
