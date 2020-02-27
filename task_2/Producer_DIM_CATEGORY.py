@@ -11,7 +11,7 @@ TOPIC = 'category'
 DATABASE_SOURCE = {'url': 'jdbc:oracle:thin:@192.168.88.102:1521:orcl',
                    'user': 'test_user',
                    'password': '1234',
-                   'table': 'fct_prod'}
+                   'table': 'category'}
 # Parameters of database destination
 DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
                    'user': 'test_user',
