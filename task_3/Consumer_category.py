@@ -11,26 +11,29 @@ TOPIC = "category"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
 HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/category"
 
-HOST_IP = "192.168.88.95"
-PORT = "1521"
-SID = "orcl"
-
 TARGET_DB_TABLE_NAME = "CATEGORY"
-OFFSET_TABLE_NAME = "OFFSET_CATEGORY" 
+OFFSET_TABLE_NAME = "OFFSET_CATEGORY"
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
+SOURCE_DB_USER_NAME = "test_user"
+SOURCE_DB_USER_PASSWORD = "1234"
 
-URL_LOG_TABLE = "jdbc:oracle:thin:@192.168.88.252:1521:oradb"
+URL_SOURCE_DB = "jdbc:oracle:thin:@192.168.88.102:1521:orcl"
+URL_TARGET_DB = "jdbc:oracle:thin:@192.168.88.95:1521:orcl"
+DRIVER = 'oracle.jdbc.OracleDriver'
 LOG_TABLE_NAME = "log_table"
+
 
 def parse(line):
     """ Parsing JSON messages from Kafka Producer """
     data = json.loads(line)
     return data['CATEGORY_ID'], data['CATEGORY_CODE']
-    
+
+
 def deserializer():
     """ Deserializer messages from Kafka Producer """
     return bytes.decode
+
 
 def write_log(level_log, program_name, procedure_name, message):
     log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
@@ -40,11 +43,12 @@ def write_log(level_log, program_name, procedure_name, message):
         .format('jdbc') \
         .mode('append') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
-        .option('url', URL_LOG_TABLE) \
+        .option('url', URL_SOURCE_DB) \
         .option('dbtable', LOG_TABLE_NAME) \
-        .option('user', TARGET_DB_USER_NAME) \
-        .option('password', TARGET_DB_USER_PASSWORD) \
+        .option('user', SOURCE_DB_USER_NAME) \
+        .option('password', SOURCE_DB_USER_PASSWORD) \
         .save()
+
 
 def save_data(rdd):
     global flag
@@ -59,9 +63,8 @@ def save_data(rdd):
         df = sqlContext.createDataFrame(rdd)
         df.createOrReplaceTempView("t")
         result = spark.sql("select _1 as category_id,_2 as category_code from t")
-        
         count = result.count()
-        
+
         try:
             # Writing to HDFS
             result.write \
@@ -69,18 +72,18 @@ def save_data(rdd):
                 .mode("append") \
                 .option("header", "true") \
                 .save(HDFS_OUTPUT_PATH)
-        
+
             # Writing to Oracle DB
             result.write \
                 .format("jdbc") \
                 .mode("append") \
-                .option("driver", 'oracle.jdbc.OracleDriver') \
-                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("driver", DRIVER) \
+                .option("url", URL_TARGET_DB) \
                 .option("dbtable", TARGET_DB_TABLE_NAME) \
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
-                
+
             write_log('INFO', 'Consumer_category.py', 'main', '{} rows inserted successfully'.format(count))
 
         except Exception as e:
@@ -90,7 +93,8 @@ def save_data(rdd):
     else:
         ssc.stop()
     return rdd
-    
+
+
 def store_offset_ranges(rdd):
     """ 
     Storing offsets
@@ -99,47 +103,47 @@ def store_offset_ranges(rdd):
     global offsetRanges
     offsetRanges = rdd.offsetRanges()
     return rdd
-  
+
+
 def write_offset_ranges(rdd):
     """
-    Writing value of untilOffset to *.txt file
+    Writing value of untilOffset to DB for offsets
     :param untilOffset: Exclusive ending offset.
     """
     if flag != True:
         for o in offsetRanges:
             currentOffset = int(o.untilOffset)
-            df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
-            df1.write \
+            df_write_offsets = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
+            df_write_offsets.write \
                 .format("jdbc") \
                 .mode("overwrite") \
-                .option("driver", 'oracle.jdbc.OracleDriver') \
-                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("driver", DRIVER) \
+                .option("url", URL_TARGET_DB) \
                 .option("dbtable", OFFSET_TABLE_NAME) \
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
 
+
 if __name__ == "__main__":
     ssc = StreamingContext(sc, 5)
-    
-    df1 = spark.read \
+
+    df_read_offsets = spark.read \
         .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+        .option("driver", DRIVER) \
+        .option("url", URL_TARGET_DB) \
         .option("dbtable", OFFSET_TABLE_NAME) \
         .option("user", TARGET_DB_USER_NAME) \
         .option("password", TARGET_DB_USER_PASSWORD) \
         .load()
-        
-    maxOffset = df1.agg({'OFFSET': 'max'}).collect()[0][0]
+
+    maxOffset = df_read_offsets.agg({'OFFSET': 'max'}).collect()[0][0]
     if maxOffset == None:
         maxOffset = 0
-    
-    topicPartion = TopicAndPartition(TOPIC, PARTITION)
 
+    topicPartion = TopicAndPartition(TOPIC, PARTITION)
     fromOffset = {topicPartion: maxOffset}
-    kafkaParams = {"metadata.broker.list": BROKER_LIST}
-    kafkaParams["enable.auto.commit"] = "false"
+    kafkaParams = {"metadata.broker.list": BROKER_LIST, "enable.auto.commit": "false"}
 
     directKafkaStream = KafkaUtils.createDirectStream(ssc, [TOPIC], kafkaParams, fromOffsets=fromOffset,
                                                       keyDecoder=deserializer(), valueDecoder=deserializer())
