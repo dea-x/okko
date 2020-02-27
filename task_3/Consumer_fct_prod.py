@@ -64,12 +64,12 @@ def save_data(rdd):
             .format("jdbc") \
             .option("driver", DRIVER) \
             .option("url", URL_TARGET_DB) \
-            .option("dbtable", TARGET_DB_TABLE_NAME) \
+            .option("dbtable", "(SELECT max(ID) ID from " + TARGET_DB_TABLE_NAME + ")") \
             .option("user", TARGET_DB_USER_NAME) \
             .option("password", TARGET_DB_USER_PASSWORD) \
             .load()
 
-        max_id = df_max_id.agg({'id': 'max'}).collect()[0][0]
+        max_id = df_max_id.agg({'ID': 'max'}).collect()[0][0]
         if max_id == None:
             max_id = 0
 
