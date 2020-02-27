@@ -94,7 +94,7 @@ def main():
         maxID = next(df_target.agg({'id': 'max'}).toLocalIterator())[0]
         maxID = 0 if maxID is None else maxID
         # Creation of final dataframe
-        dfResult = df_source.where((sf.col('id') > maxID) & (sf.col('id') < maxID + 10000000))
+        dfResult = df_source.where((sf.col('id') > maxID) & (sf.col('id') < maxID + 2000000))
         # Sending dataframe to Kafka
         dfResult.foreachPartition(send_to_Kafka)
         # Count offset
