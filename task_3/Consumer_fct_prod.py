@@ -60,6 +60,7 @@ def save_data(rdd):
     """
     if not rdd.isEmpty():
         # Create df for duplicate handling
+        write_log('INFO', 'Consumer_fct_prod.py', 'main', 'Executing max_id')
         df_max_id = spark.read \
             .format("jdbc") \
             .option("driver", DRIVER) \
@@ -72,6 +73,7 @@ def save_data(rdd):
         max_id = df_max_id.agg({'ID': 'max'}).collect()[0][0]
         if max_id == None:
             max_id = 0
+        write_log('INFO', 'Consumer_fct_prod.py', 'main', 'Max id executed successfully max_id = {}'.format(max_id))
 
         rdd = rdd.map(lambda m: parse(m[1]))
         df_fct_prod = sqlContext.createDataFrame(rdd)
@@ -86,6 +88,9 @@ def save_data(rdd):
         count = result.count()
 
         try:
+            write_log('INFO', 'Consumer_fct_prod.py', 'main',
+                      'Consumer is inserting {} rows to DB'.format(count))
+
             # Writing to HDFS
             result.write \
                 .format("csv") \
@@ -104,7 +109,7 @@ def save_data(rdd):
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
 
-            write_log('INFO', 'Consumer_fct_prod.py', 'main', '{} rows inserted successfully'.format(count))
+            write_log('INFO', 'Consumer_fct_prod.py', 'main', '{} rows inserted to DB successfully'.format(count))
 
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
