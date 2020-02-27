@@ -11,9 +11,9 @@ from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 # Topic name
 TOPIC = 'dim_suppliers'
 # Parameters of database source
-DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.252:1521:oradb",
+DATABASE_SOURCE = {"url": "jdbc:oracle:thin:@192.168.88.102:1521:orcl",
                    'user': 'test_user',
-                   'password': 'test_user',
+                   'password': '1234',
                    'table': 'dim_suppliers'}
 # Parameters of database destination
 DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
