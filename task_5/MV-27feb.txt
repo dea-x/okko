@@ -6,11 +6,12 @@ CREATE MATERIALIZED VIEW SumPerDay
    BUILD IMMEDIATE
    REFRESH FAST ON COMMIT
    AS 
-SELECT to_char(f.event_time, 'yyyy-mm-dd') day, SUM(p.price) sold,  to_char(event_time, 'yyyy') year, to_char(event_time, 'IW') week, to_char (event_time, 'MONTH') month, to_char(event_time, 'yyyy-Q') quarter     
+SELECT to_char(f.event_time, 'dd.mm.yyyy') day, SUM(p.price) sold,  to_char(event_time, 'yyyy') year, to_char(event_time, 'IW') week, to_char (event_time, 'MONTH') month, to_char(event_time, 'yyyy-Q') quarter     
   FROM FCT_PROD f,
        DIM_PRODUCTS p
   WHERE f.event_id = 4 and f.product_id = p.product_id
-  GROUP BY to_char(f.event_time, 'yyyy-mm-dd'), to_char(event_time, 'yyyy'), to_char(event_time, 'IW'), to_char (event_time, 'MONTH'), to_char(event_time, 'yyyy-Q');
---DROP MATERIALIZED VIEW LOG ON FCT_PROD;
---DROP MATERIALIZED VIEW LOG ON DIM_PRODUCTS;
+  GROUP BY to_char(f.event_time, 'dd.mm.yyyy'), to_char(event_time, 'yyyy'), to_char(event_time, 'IW'), to_char (event_time, 'MONTH'), to_char(event_time, 'yyyy-Q');
+  
+--DROP MATERIALIZED VIEW LOG ON FCT_PROD 
+--DROP MATERIALIZED VIEW LOG ON DIM_PRODUCTS 
 --DROP MATERIALIZED VIEW SumPerDay
