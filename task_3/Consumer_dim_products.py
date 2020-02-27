@@ -43,7 +43,7 @@ def write_log(level_log, program_name, procedure_name, message):
     result.write \
         .format('jdbc') \
         .mode('append') \
-        .option('driver', 'oracle.jdbc.OracleDriver') \
+        .option('driver', DRIVER) \
         .option('url', URL_SOURCE_DB) \
         .option('dbtable', LOG_TABLE_NAME) \
         .option('user', SOURCE_DB_USER_NAME) \
@@ -63,7 +63,7 @@ def save_data(rdd):
         # Create df for duplicate handling
         df_max_id = spark.read \
             .format("jdbc") \
-            .option("driver", 'oracle.jdbc.OracleDriver') \
+            .option("driver", DRIVER) \
             .option("url", URL_TARGET_DB) \
             .option("dbtable", TARGET_DB_TABLE_NAME) \
             .option("user", TARGET_DB_USER_NAME) \
@@ -98,7 +98,7 @@ def save_data(rdd):
             result.write \
                 .format("jdbc") \
                 .mode("append") \
-                .option("driver", 'oracle.jdbc.OracleDriver') \
+                .option("driver", DRIVER) \
                 .option("url", URL_TARGET_DB) \
                 .option("dbtable", TARGET_DB_TABLE_NAME) \
                 .option("user", TARGET_DB_USER_NAME) \
