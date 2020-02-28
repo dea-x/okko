@@ -4,6 +4,17 @@
 /*
 Таблица, которую будем индексировать:
 
+CREATE TABLE FCT_PROD_PART (
+    id           NUMBER,
+    event_id     NUMBER,
+    event_time   DATE,
+    product_id   NUMBER,
+    customer_id  NUMBER,
+    CONSTRAINT id_pk PRIMARY KEY (id)
+);
+
+
+
 CREATE TABLE FCT_EVENTS_part(
     event_time         DATE,
     event_type         VARCHAR2(20),

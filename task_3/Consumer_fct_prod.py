@@ -11,17 +11,17 @@ TOPIC = "fct_prod"
 BROKER_LIST = 'cdh631.itfbgroup.local:9092'
 HDFS_OUTPUT_PATH = "hdfs://cdh631.itfbgroup.local:8020/user/usertest/okko/fct_prod"
 
-HOST_IP = "192.168.88.95"
-PORT = "1521"
-SID = "orcl"
-
-URL_LOG_TABLE = "jdbc:oracle:thin:@192.168.88.252:1521:oradb"
-LOG_TABLE_NAME = "log_table"
-
 TARGET_DB_TABLE_NAME = "FCT_PROD"
 OFFSET_TABLE_NAME = "OFFSET_FCT_PROD"
 TARGET_DB_USER_NAME = "test_user"
 TARGET_DB_USER_PASSWORD = "test_user"
+SOURCE_DB_USER_NAME = "test_user"
+SOURCE_DB_USER_PASSWORD = "1234"
+
+URL_SOURCE_DB = "jdbc:oracle:thin:@192.168.88.102:1521:orcl"
+URL_TARGET_DB = "jdbc:oracle:thin:@192.168.88.95:1521:orcl"
+DRIVER = 'oracle.jdbc.OracleDriver'
+LOG_TABLE_NAME = "log_table"
 
 
 def parse(line):
@@ -30,10 +30,10 @@ def parse(line):
     return data['ID'], data['EVENT_ID'], data['EVENT_TIME'], data['PRODUCT_ID'], data['CUSTOMER_ID']
 
 
-
 def deserializer():
     """ Deserializer messages from Kafka Producer """
     return bytes.decode
+
 
 def write_log(level_log, program_name, procedure_name, message):
     log_row = namedtuple('log_row', 'TIME_LOG LEVEL_LOG PROGRAM_NAME PROCEDURE_NAME MESSAGE'.split())
@@ -42,11 +42,11 @@ def write_log(level_log, program_name, procedure_name, message):
     result.write \
         .format('jdbc') \
         .mode('append') \
-        .option('driver', 'oracle.jdbc.OracleDriver') \
-        .option('url', URL_LOG_TABLE) \
+        .option('driver', DRIVER) \
+        .option('url', URL_SOURCE_DB) \
         .option('dbtable', LOG_TABLE_NAME) \
-        .option('user', TARGET_DB_USER_NAME) \
-        .option('password', TARGET_DB_USER_PASSWORD) \
+        .option('user', SOURCE_DB_USER_NAME) \
+        .option('password', SOURCE_DB_USER_PASSWORD) \
         .save()
 
 
@@ -60,51 +60,56 @@ def save_data(rdd):
     """
     if not rdd.isEmpty():
         # Create df for duplicate handling
+        write_log('INFO', 'Consumer_fct_prod.py', 'main', 'Executing max_id')
         df_max_id = spark.read \
             .format("jdbc") \
-            .option("driver", 'oracle.jdbc.OracleDriver') \
-            .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
-            .option("dbtable", TARGET_DB_TABLE_NAME) \
+            .option("driver", DRIVER) \
+            .option("url", URL_TARGET_DB) \
+            .option("dbtable", "(SELECT max(ID) ID from " + TARGET_DB_TABLE_NAME + ")") \
             .option("user", TARGET_DB_USER_NAME) \
             .option("password", TARGET_DB_USER_PASSWORD) \
             .load()
-        
-        max_id = df_max_id.agg({'id': 'max'}).collect()[0][0]
+
+        max_id = df_max_id.agg({'ID': 'max'}).collect()[0][0]
         if max_id == None:
-            max_id = 0        
-    
+            max_id = 0
+        write_log('INFO', 'Consumer_fct_prod.py', 'main', 'Max id executed successfully max_id = {}'.format(max_id))
+
         rdd = rdd.map(lambda m: parse(m[1]))
-        df_fct_events = sqlContext.createDataFrame(rdd)
-        df.createOrReplaceTempView("t")
+        df_fct_prod = sqlContext.createDataFrame(rdd)
+        df_fct_prod.createOrReplaceTempView("t")
         result = spark.sql(
             '''select id, event_id, event_time, product_id, customer_id
         from (select row_number() over (partition by _1 order by _3) as RN, _1 as id,_2 as event_id,
         to_timestamp(_3) as event_time,_4 as product_id,_5 as customer_id
                     from t where _1 > ''' + str(max_id) + ''')
         where RN = 1''')
-        
+
         count = result.count()
-        
+
         try:
+            write_log('INFO', 'Consumer_fct_prod.py', 'main',
+                      'Consumer is inserting {} rows to DB'.format(count))
+
             # Writing to HDFS
             result.write \
                 .format("csv") \
                 .mode("append") \
                 .option("header", "true") \
                 .save(HDFS_OUTPUT_PATH)
-        
+
             # Writing to Oracle DB
             result.write \
                 .format("jdbc") \
                 .mode("append") \
-                .option("driver", 'oracle.jdbc.OracleDriver') \
-                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("driver", DRIVER) \
+                .option("url", URL_TARGET_DB) \
                 .option("dbtable", TARGET_DB_TABLE_NAME) \
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
                 .save()
-                
-            write_log('INFO', 'Consumer_fct_prod.py', 'main', '{} rows inserted successfully'.format(count))
+
+            write_log('INFO', 'Consumer_fct_prod.py', 'main', '{} rows inserted to DB successfully'.format(count))
 
         except Exception as e:
             print('--> It seems an Error occurred: {}'.format(e))
@@ -127,18 +132,18 @@ def store_offset_ranges(rdd):
 
 def write_offset_ranges(rdd):
     """
-    Writing value of untilOffset to DB table
+    Writing value of untilOffset to DB for offsets
     :param untilOffset: Exclusive ending offset.
     """
     if flag != True:
         for o in offsetRanges:
             currentOffset = int(o.untilOffset)
-            df1 = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
-            df1.write \
+            df_write_offsets = sqlContext.createDataFrame([{"OFFSET": currentOffset}])
+            df_write_offsets.write \
                 .format("jdbc") \
                 .mode("overwrite") \
-                .option("driver", 'oracle.jdbc.OracleDriver') \
-                .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+                .option("driver", DRIVER) \
+                .option("url", URL_TARGET_DB) \
                 .option("dbtable", OFFSET_TABLE_NAME) \
                 .option("user", TARGET_DB_USER_NAME) \
                 .option("password", TARGET_DB_USER_PASSWORD) \
@@ -147,25 +152,23 @@ def write_offset_ranges(rdd):
 
 if __name__ == "__main__":
     ssc = StreamingContext(sc, 5)
-    
-    df1 = spark.read \
+
+    df_read_offsets = spark.read \
         .format("jdbc") \
-        .option("driver", 'oracle.jdbc.OracleDriver') \
-        .option("url", "jdbc:oracle:thin:@{0}:{1}:{2}".format(HOST_IP, PORT, SID)) \
+        .option("driver", DRIVER) \
+        .option("url", URL_TARGET_DB) \
         .option("dbtable", OFFSET_TABLE_NAME) \
         .option("user", TARGET_DB_USER_NAME) \
         .option("password", TARGET_DB_USER_PASSWORD) \
         .load()
-        
-    maxOffset = df1.agg({'OFFSET': 'max'}).collect()[0][0] 
+
+    maxOffset = df_read_offsets.agg({'OFFSET': 'max'}).collect()[0][0]
     if maxOffset == None:
         maxOffset = 0
-    
-    topicPartion = TopicAndPartition(TOPIC, PARTITION)
 
+    topicPartion = TopicAndPartition(TOPIC, PARTITION)
     fromOffset = {topicPartion: maxOffset}
-    kafkaParams = {"metadata.broker.list": BROKER_LIST}
-    kafkaParams["enable.auto.commit"] = "false"
+    kafkaParams = {"metadata.broker.list": BROKER_LIST, "enable.auto.commit": "false"}
 
     directKafkaStream = KafkaUtils.createDirectStream(ssc, [TOPIC], kafkaParams, fromOffsets=fromOffset,
                                                       keyDecoder=deserializer(), valueDecoder=deserializer())
@@ -177,4 +180,3 @@ if __name__ == "__main__":
 
     ssc.start()
     ssc.awaitTermination()
-

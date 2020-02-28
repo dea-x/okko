@@ -8,10 +8,10 @@ import json
 # Topic name
 TOPIC = 'fct_prod'
 # Parameters of database source
-DATABASE_SOURCE = {'url': 'jdbc:oracle:thin:@192.168.88.252:1521:oradb',
+DATABASE_SOURCE = {'url': 'jdbc:oracle:thin:@192.168.88.102:1521:orcl',
                    'user': 'test_user',
-                   'password': 'test_user',
-                   'table': 'fct_prod'}
+                   'password': '1234',
+                   'table': 'FCT_PROD'}
 # Parameters of database destination
 DATABASE_TARGET = {'url': 'jdbc:oracle:thin:@192.168.88.95:1521:orcl',
                    'user': 'test_user',
@@ -37,26 +37,35 @@ def send_to_Kafka(rows):
 
 
 def connection_to_bases():
+    # creating a dataframe for the target table
+    max_id = None
+    try:
+        df_target = spark.read \
+            .format('jdbc') \
+            .option('driver', 'oracle.jdbc.OracleDriver') \
+            .option('url', DATABASE_TARGET['url']) \
+            .option('dbtable', '(select max(id) as id from {0})'.format(DATABASE_TARGET['table'])) \
+            .option('user', DATABASE_TARGET['user']) \
+            .option('password', DATABASE_TARGET['password']) \
+            .load()
+        max_id = next(df_target.agg({'id': 'max'}).toLocalIterator())[0]
+
+    except Exception as e:
+        write_log('ERROR', 'Producer_FCT_PROD.py', 'connection_to_bases', str(e)[:1000])
+
+    max_id = 0 if max_id is None else max_id
+
     # creating a dataframe for the source table
     df_source = spark.read \
         .format('jdbc') \
         .option('driver', 'oracle.jdbc.OracleDriver') \
         .option('url', DATABASE_SOURCE['url']) \
-        .option('dbtable', DATABASE_SOURCE['table']) \
+        .option('dbtable', '(select * from {0} where id > {1} and id < {2})'.format(DATABASE_SOURCE['table'], max_id,
+                                                                                    max_id + 1000000)) \
         .option('user', DATABASE_SOURCE['user']) \
         .option('password', DATABASE_SOURCE['password']) \
         .load()
-
-    # creating a dataframe for the target table
-    df_target = spark.read \
-        .format('jdbc') \
-        .option('driver', 'oracle.jdbc.OracleDriver') \
-        .option('url', DATABASE_TARGET['url']) \
-        .option('dbtable', DATABASE_TARGET['table'].upper()) \
-        .option('user', DATABASE_TARGET['user']) \
-        .option('password', DATABASE_TARGET['password']) \
-        .load()
-    return df_source, df_target
+    return df_source
 
 
 def write_log(level_log, program_name, procedure_name, message):
@@ -75,7 +84,7 @@ def write_log(level_log, program_name, procedure_name, message):
 
 
 def get_offset():
-    ''' Function to receive current offset '''
+    """ Function to receive current offset """
     consumer = KafkaConsumer(TOPIC, bootstrap_servers=[SERVER_ADDRESS])
     # get partition
     # part = consumer.partitions_for_topic(TOPIC)
@@ -89,14 +98,14 @@ def main():
     try:
         start_offset = get_offset()
         # Connection to the Bases
-        df_source, df_target = connection_to_bases()
+        df_source = connection_to_bases()
         # Finding the max increment value
-        maxID = next(df_target.agg({'id': 'max'}).toLocalIterator())[0]
-        maxID = 0 if maxID is None else maxID
+        # maxID = next(df_target.agg({'id': 'max'}).toLocalIterator())[0]
+        # maxID = 0 if maxID is None else maxID
         # Creation of final dataframe
-        dfResult = df_source.where((sf.col('id') > maxID) & (sf.col('id') < maxID + 1000000))
+        # dfResult = df_source.where((sf.col('id') > maxID) & (sf.col('id') < maxID + 10000000))
         # Sending dataframe to Kafka
-        dfResult.foreachPartition(send_to_Kafka)
+        df_source.foreachPartition(send_to_Kafka)
         # Count offset
         end_offset = get_offset()
         count = end_offset - start_offset  # = df_result.count()
