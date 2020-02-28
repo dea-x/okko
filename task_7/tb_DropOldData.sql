@@ -1,54 +1,63 @@
-
 DROP TABLE OLD_DATA_PROD PURGE;
 --Таблица по удалёным данным--
 create table OLD_DATA_PROD(f_date DATE, l_date DATE, proceeds NUMBER);
 
 --Процедура вставки в таблицу OLD_DATA_PROD --
 CREATE OR REPLACE PROCEDURE ODP_INSERT (  
-f_dat OLD_DATA_PROD.f_date%TYPE,  
-l_dat OLD_DATA_PROD.l_date%TYPE,  
-proc OLD_DATA_PROD.proceeds%TYPE)    
+	f_dat 				OLD_DATA_PROD.f_date%TYPE,  
+	l_dat 				OLD_DATA_PROD.l_date%TYPE,  
+	proc 				OLD_DATA_PROD.proceeds%TYPE)    
 IS  
 BEGIN  
     INSERT INTO OLD_DATA_PROD VALUES (f_dat, l_dat, proc);  
     COMMIT;  
 END;  
 /  
+
+--Процдура вставки в таблицу логов --
+PROCEDURE cleaner_write_log (
+	level_log           LOG_TABLE_TARGER.LEVEL_LOG%TYPE,
+	program_name        LOG_TABLE_TARGER.PROGRAM_NAME%TYPE, 
+	message             LOG_TABLE_TARGER.MESSAGE%TYPE) 
+IS
+BEGIN
+    INSERT INTO LOG_TABLE_TARGET VALUES (systimestamp, level_log, program_name, message);
+    COMMIT;
+END;
+
 --Процедура очистки таблицы FCT_PROD если число строк больше 1000000--
 create or replace PROCEDURE cleaner
 AS 
-    row_count number:=0;
-    procceds number:=0;
-    avg_date FCT_PROD.EVENT_TIME%TYPE;
-    f_date FCT_PROD.EVENT_TIME%TYPE;
-    l_date FCT_PROD.EVENT_TIME%TYPE;
-    VAR1 number;
-    VAR2 number;
-    VAR3 number;
-    VAR4 number;
-    VAR5 number;
-    VAR6 number;
-    VAR7 number;
+    row_count 			number:=0;
+    procceds 			number:=0;
+    avg_date 			FCT_PROD.EVENT_TIME%TYPE;
+    f_date 				FCT_PROD.EVENT_TIME%TYPE;
+    l_date 				FCT_PROD.EVENT_TIME%TYPE;
+    VAR1 				number;
+    VAR2 				number;
+    VAR3 				number;
+    VAR4 				number;
+    VAR5 				number;
+    VAR6 				number;
+    VAR7 				number;
+	message            VARCHAR2(1000);
 BEGIN
-   select count(*) into row_count from FCT_PROD;
-   if row_count > 1000000 then 
-       select EVENT_TIME into f_date from FCT_PROD where ROWNUM = 1;
-       select max(EVENT_TIME) into l_date from FCT_PROD;
+   SELECT COUNT(*) INTO row_count FROM FCT_PROD;
+   IF row_count > 1000000 then 
+       SELECT MIN(EVENT_TIME) INTO f_date FROM FCT_PROD;
+       SELECT MAX(EVENT_TIME) INTO l_date FROM FCT_PROD;
        avg_date := f_date + (l_date - f_date)/2;
-       DELETE FCT_PROD where EVENT_TIME < avg_date; 
-       select sum(SOLD) into procceds from SumPerDay where DAY BETWEEN to_char(f_date,'dd.mm.yyyy') and to_char(avg_date,'dd.mm.yyyy');
+       DELETE FCT_PROD WHERE EVENT_TIME < avg_date; 
+       SELECT SUM(SOLD) INTO procceds FROM SumPerDay WHERE DAY BETWEEN to_char(f_date,'dd.mm.yyyy') AND to_char(avg_date,'dd.mm.yyyy');
        ODP_INSERT(f_date, avg_date, procceds);
        SYS.dbms_space.unused_space('TEST_USER','FCT_PROD','TABLE',VAR1,VAR2,VAR3,VAR4,VAR5,VAR6,VAR7);
        EXECUTE IMMEDIATE 'ALTER TABLE FCT_PROD DEALLOCATE UNUSED KEEP'|| VAR3;
-   end if; 
-  COMMIT;
-   EXCEPTION WHEN others THEN
-   NULL;
+   END IF; 
+   COMMIT;
+   EXCEPTION WHEN OTHERS THEN 
+	   message := TO_CHAR(sqlcode)||'-'||sqlerrm||'. '||dbms_utility.format_error_backtrace;
+       cleaner_write_log('ERROR', 'CLEAN_PROGRAM', message);
 END; 
---Для теста--
-BEGIN
-    cleaner;
-END;
 
 --Расписание для cleaner_job--
 BEGIN
