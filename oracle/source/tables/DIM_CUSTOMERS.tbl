@@ -1,0 +1,13 @@
+-- Справочник Покупатели --
+
+CREATE TABLE DIM_CUSTOMERS ( 
+	customer_id 		NUMBER, 
+	country 			VARCHAR2(40), 
+	city 				VARCHAR2(40), 
+	phone 				VARCHAR2(40), 
+	first_name 			VARCHAR2(40), 
+	last_name 			VARCHAR2(40), 
+	mail 				VARCHAR2(50), 
+	last_update_date 	DATE,
+	CONSTRAINT customer_pk PRIMARY KEY (customer_id)
+);
