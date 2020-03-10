@@ -1,0 +1,5 @@
+CREATE TABLE CATEGORY ( 
+	category_id 	NUMBER, 
+	category_code 	VARCHAR2(25), 
+	CONSTRAINT category_pk PRIMARY KEY (category_id)
+);
