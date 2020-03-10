@@ -1,0 +1,9 @@
+CREATE TABLE DIM_SUPPLIERS ( 
+	suppliers_id NUMBER, 
+	category_id NUMBER, 
+	name VARCHAR2(40), 
+	country VARCHAR2(40), 
+	city VARCHAR2(40), 
+	last_update_date DATE,
+	CONSTRAINT suppliers_pk PRIMARY KEY (suppliers_id)
+);
