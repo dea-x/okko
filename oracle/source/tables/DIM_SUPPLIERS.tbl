@@ -1,3 +1,5 @@
+-- Справочник Поставщики --
+
 CREATE TABLE DIM_SUPPLIERS ( 
 	suppliers_id NUMBER, 
 	category_id NUMBER, 
