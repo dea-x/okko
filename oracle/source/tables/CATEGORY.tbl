@@ -1,3 +1,5 @@
+-- Справочник Категорий --
+
 CREATE TABLE CATEGORY ( 
 	category_id 	NUMBER, 
 	category_code 	VARCHAR2(25), 
