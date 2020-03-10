@@ -1,3 +1,5 @@
+-- Последовательность для id таблицы Фактов --
+
 CREATE SEQUENCE fct_s_prod
     MINVALUE 1
     START WITH 1
