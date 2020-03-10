@@ -1,0 +1,12 @@
+-- Справочник Товары --
+
+CREATE TABLE DIM_PRODUCTS ( 
+	product_id 		    	NUMBER, 
+	category_id 	    	NUMBER, 
+	brand 				      VARCHAR2(30), 
+	description 	    	VARCHAR2(100), 
+	name 				        VARCHAR2(50), 
+	price 				      NUMBER, 
+	last_update_date 	  DATE, 
+	CONSTRAINT product_pk PRIMARY KEY (product_id)
+);
