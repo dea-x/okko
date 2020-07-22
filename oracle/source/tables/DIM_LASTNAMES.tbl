@@ -1,0 +1,7 @@
+-- Подсправочник  фамилий --
+
+CREATE TABLE DIM_LASTNAMES (
+	id 		NUMBER,
+	name 	VARCHAR2(20),
+	gender 	VARCHAR(2)
+);

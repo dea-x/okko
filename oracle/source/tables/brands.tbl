@@ -1,0 +1,5 @@
+-- Подсправочник  Брендов --
+
+CREATE TABLE brands (
+	brand 	VARCHAR2(30)
+);

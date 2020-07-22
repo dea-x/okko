@@ -1,0 +1,7 @@
+-- Подсправочник имен --
+
+CREATE TABLE DIM_NAMES (
+	id 		NUMBER,
+	name 	VARCHAR2(20),
+	gender 	VARCHAR(2)
+);

@@ -1,0 +1,8 @@
+-- Подсправочник  Продуктов --
+
+CREATE TABLE  products (
+    product        VARCHAR2(50),
+    des            VARCHAR2(100),
+    category_id    NUMBER
+);
+

@@ -1,0 +1,10 @@
+-- Таблица Фактов --
+
+CREATE TABLE FCT_PROD (
+	id 			 NUMBER,
+	event_id	 NUMBER,
+    event_time   DATE, 
+    product_id   NUMBER,
+    customer_id  NUMBER,
+	CONSTRAINT id_pk PRIMARY KEY (id)
+);
