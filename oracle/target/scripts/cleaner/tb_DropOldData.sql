@@ -45,7 +45,7 @@ BEGIN
   DBMS_SCHEDULER.create_job (
     job_name        => 'clean_job',
     job_type        => 'STORED_PROCEDURE',
-    job_action      => 'clean',
+    job_action      => 'cleaner',
     start_date      => SYSTIMESTAMP,
     repeat_interval => 'FREQ=WEEKLY; BYDAY=MON,FRI; BYHOUR=12; BYMINUTE = 00',
     end_date        => SYSTIMESTAMP + INTERVAL '30' day,
